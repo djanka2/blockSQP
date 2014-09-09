@@ -1,0 +1,899 @@
+#include "blocksqp.hpp"
+
+//#define LIFTED
+#define LIFTED2
+//#define UNLIFTED
+
+#define NEWMAYER
+
+// number of control intervals
+#define M 4
+
+#if defined LIFTED || defined LIFTED2
+#define NS M
+#else
+#define NS 0
+#endif
+
+
+/**
+ * Derived class from generic problem specification class that implements all abstract methods
+ */
+class MyProblem : public Problemspec
+{
+    public:
+        Matrix xi0;
+
+    public:
+        MyProblem( int nVar_, int nCon_, int nBlocks_, int *BlockIdx_, Matrix bl_, Matrix bu_, Matrix xi0_ );
+        virtual void setInitialValues( Matrix &xi, Matrix &lambda, Matrix &constrJac );
+        virtual void evalConstraints( Matrix xi, Matrix &constr, Matrix &constrJac, Matrix lambda, SymMatrix *&hess, int dmode, int *info );
+        virtual void convertJacobian( Matrix constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall = 0 );
+        virtual void evalObjective( Matrix xi, double *objval, Matrix &gradObj, SymMatrix *&hess, int dmode, int nstate, int *info );
+        virtual void printInfo();
+};
+
+void MyProblem::printInfo()
+{
+    printf( "blockSQP standalone version using\n" );
+#ifdef QPSOLVER_QPOPT
+    printf( "QPOPT.\n" );
+#endif
+#ifdef QPSOLVER_QPOASES_DENSE
+    printf( "QPOASES (DENSE).\n" );
+#endif
+#ifdef QPSOLVER_QPOASES_SPARSE
+    printf( "QPOASES (w SPARSE matrices).\n" );
+#endif
+#ifdef QPSOLVER_QPOASES_SCHUR
+    printf( "QPOASES (SCHUR COMPLEMENT).\n" );
+#endif
+    printf( "\nnVar = %i\n", nVar );
+    printf( "nCon = %i\n\n", nCon );
+}
+
+/**
+ * Constraint evaluation methods still operate on dense Jacobian, this is a generic method to convert it
+ * to a sparse matrix in Harwell--Boeing (column compressed) format
+ */
+void MyProblem::convertJacobian( Matrix constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall )
+{
+    int nnz, count, i, j;
+
+    if( firstCall )
+    {
+        // 1st run: count nonzeros
+        nnz = 0;
+        for( j=0; j<nVar; j++ )
+            for( i=0; i<nCon; i++ )
+                if( fabs( constrJac( i, j ) < myInf ) )
+                    nnz++;
+
+        if( jacNz != NULL ) delete[] jacNz;
+        if( jacIndRow != NULL ) delete[] jacIndRow;
+
+        jacNz = new double[nnz];
+        jacIndRow = new int[nnz + (nVar+1) + nVar];
+        jacIndCol = jacIndRow + nnz;
+    }
+    else
+    {
+        nnz = jacIndCol[nVar];
+        /* arrays jacInd* are already allocated! */
+    }
+
+    // 2nd run: store matrix entries columnwise in jacNz
+    count = 0;
+    for( j=0; j<nVar; j++ )
+    {
+        jacIndCol[j] = count;
+        for( i=0; i<nCon; i++ )
+            if( fabs( constrJac( i, j ) < myInf ) )
+            {
+                jacNz[count] = constrJac( i, j );
+                jacIndRow[count] = i;
+                count++;
+            }
+    }
+    jacIndCol[nVar] = count;
+    if( count != nnz )
+         printf( "Error in convertJacobian: %i elements processed, should be %i elements!\n", count, nnz );
+}
+
+/**
+ * Set your initial values for xi (and possibly lambda) here.
+ * You can also set the parts of the Jacobian that correspond to purely linear constraints, i.e. that don't change
+ */
+void MyProblem::setInitialValues( Matrix &xi, Matrix &lambda, Matrix &constrJac )
+{
+    for( int i=0; i<nVar; i++ )
+        xi( i ) = xi0( i );
+
+#ifdef LIFTED2
+    // Start feasible in the continuity conditions
+    for( int i=0; i<NS; i++ )
+    {
+        xi(7*i+1) = 0.0;
+        xi(7*i+2) = 0.0;
+        xi(7*i+3) = 0.0;
+        xi(7*i+4) = 0.0;
+        xi(7*i+5) = 0.0;
+        xi(7*i+6) = 0.0;
+    }
+
+    int info;
+    Matrix constrTemp, constrJacDummy;
+    SymMatrix *hessDummy;
+    constrTemp.Dimension( nCon );
+
+    for( int i=0; i<NS; i++ )
+    {
+        evalConstraints( xi, constrTemp, constrJacDummy, lambda, hessDummy, 0, &info );
+        xi(7*i+1) = constrTemp(6*i+0);
+        xi(7*i+2) = constrTemp(6*i+1);
+        xi(7*i+3) = constrTemp(6*i+2);
+    }
+
+    for( int i=0; i<NS; i++ )
+    {
+        evalConstraints( xi, constrTemp, constrJacDummy, lambda, hessDummy, 0, &info );
+        xi(7*i+4) = constrTemp(6*i+3);
+        xi(7*i+5) = constrTemp(6*i+4);
+        xi(7*i+6) = constrTemp(6*i+5);
+    }
+#else
+    // Start feasible in the matrix constraint and continuity conditions
+    xi( nVar-1 ) = 0.0;
+    xi( nVar-2 ) = 0.0;
+    xi( nVar-3 ) = 0.0;
+
+    for( int i=0; i<NS; i++ )
+    {
+        xi(4*i+1) = 0.0;
+        xi(4*i+2) = 0.0;
+        xi(4*i+3) = 0.0;
+    }
+
+    int info;
+    Matrix constrTemp, constrJacDummy;
+    SymMatrix *hessDummy;
+    constrTemp.Dimension( nCon );
+
+    for( int i=0; i<NS; i++ )
+    {
+        evalConstraints( xi, constrTemp, constrJacDummy, lambda, hessDummy, 0, &info );
+        xi(4*i+1) = constrTemp(3*i+0);
+        xi(4*i+2) = constrTemp(3*i+1);
+        xi(4*i+3) = constrTemp(3*i+2);
+    }
+
+    evalConstraints( xi, constrTemp, constrJacDummy, lambda, hessDummy, 0, &info );
+    xi( nVar-1 ) = constrTemp( nCon-1 );
+    xi( nVar-2 ) = constrTemp( nCon-2 );
+    xi( nVar-3 ) = constrTemp( nCon-3 );
+#endif
+
+    lambda.Initialisieren( 0.0 );
+}
+
+/**
+ * Set basic problem data in the constructor:
+ * - nVar: number of variables
+ * - nCon: number of constraints
+ * - bl[nVar+nCon], bu[nVar+nCon]: lower and upper bounds for variables and constraints
+ * - nBlocks: number of diagonal blocks in the Hessian
+ * - blockIdx[nBlocks+1]: where do blocks start and end?
+ * - objLo, objUp: lower and upper bound for objective (should not be active at the solution)
+ *
+ * Optional:
+ * - conNames[nCon], varNames[nVar]: names for constraints and variables
+ */
+MyProblem::MyProblem( int nVar_, int nCon_, int nBlocks_, int *blockIdx_, Matrix bl_, Matrix bu_, Matrix xi0_ )
+{
+    nVar = nVar_;
+    nCon = nCon_;
+
+    nBlocks = nBlocks_;
+    blockIdx = new int[nBlocks+1];
+    if( nBlocks == 1 )
+    {
+        blockIdx[0] = 0;
+        blockIdx[1] = nVar;
+    }
+    else
+    {
+        for( int i=0; i<nBlocks+1; i++ )
+            blockIdx[i] = blockIdx_[i];
+    }
+
+    bl.Dimension( nVar + nCon ).Initialisieren( -myInf );
+    bu.Dimension( nVar + nCon ).Initialisieren( myInf );
+
+    for( int i=0; i<nVar+nCon; i++ )
+    {
+        bl( i ) = bl_( i );
+        bu( i ) = bu_( i );
+    }
+
+    objLo = -myInf;
+    objUp = myInf;
+
+    xi0.Dimension( nVar );
+    for( int i=0; i<nVar; i++ )
+        xi0( i ) = xi0_( i );
+}
+
+/**********************************************************************/
+/**                     PROBLEM SPECIFIC PART                        **/
+/**********************************************************************/
+
+double fi( double s, double q, double p1 ) {
+    return s*s*q*p1;
+}
+
+double dfi_ds( double s, double q, double p1 ) {
+    return 2.0*s*q*p1;
+}
+
+double dfi_dq( double s, double q, double p1 ) {
+    return s*s*p1;
+}
+
+double dfi_dp1( double s, double q, double p1 ) {
+    return s*s*q;
+}
+
+double ddfi_dsds( double s, double q, double p1 ) {
+    return 2.0*q*p1;
+}
+
+double ddfi_dsdq( double s, double q, double p1 ) {
+    return 2.0*s*p1;
+}
+
+double ddfi_dsdp1( double s, double q, double p1 ) {
+    return 2.0*s*q;
+}
+
+double ddfi_dqdp1( double s, double q, double p1 ) {
+    return s*s;
+}
+
+double aGlob[M], bGlob[M], cGlob[M];
+
+/**
+ * Evaluate objective and derivatives.
+ * dmode = 0: objective value only
+ * dmode = 1: objective and gradient of objective
+ * dmode = 2: objective, gradient and Hessian of the Lagrangian (don't use)
+ */
+void MyProblem::evalObjective( Matrix xi, double *objval, Matrix &gradObj, SymMatrix *&hess, int dmode, int nstate, int *info )
+{
+    *info = 0;
+    double a, b, c, det, det2;
+
+    // Variables:
+    // - 1 control on M intervals
+    // - s,S1,S2 for NS nodes (usually=M+1)
+
+#ifdef LIFTED2
+
+#ifdef NEWMAYER
+    // Call evalConstraints to set global variables
+    double S1, S2, dphi_da, dphi_db, dphi_dc, da_dS1, da_dS2, db_dS1, db_dS2, dc_dS1, dc_dS2;
+    Matrix constrDummy, constrJacDummy, lambdaDummy;
+    constrDummy.Dimension( nCon ).Initialisieren( 0.0 );
+    constrJacDummy.Dimension( nCon, nVar ).Initialisieren( 0.0 );
+    evalConstraints( xi, constrDummy, constrJacDummy, lambdaDummy, hess, 1, info );
+
+    // Telescope sum: add all phi(H_i+S*S)
+    *objval = 0.0;
+    gradObj.Initialisieren(0.0);
+    for( int i=0; i<M; i++ )
+    {
+        a = aGlob[i];
+        b = bGlob[i];
+        c = cGlob[i];
+
+        S1 = xi(i*7+2);
+        S2 = xi(i*7+3);
+
+        det = a*c - b*b;
+        det2 = det*det;
+
+        *objval += (a+c) / det;
+
+        dphi_da = -(c*c + b*b) / det2;
+        dphi_db = 2 * (c*b + b*a) / det2;
+        dphi_dc = -(b*b + a*a) / det2;
+
+        da_dS1 = 2*S1;
+        da_dS2 = 0.0;
+
+        db_dS1 = S2;
+        db_dS2 = S1;
+
+        dc_dS1 = 0.0;
+        dc_dS2 = 2*S2;
+
+        if( dmode > 0 )
+        {
+            // derv w.r.t. S1, S2, also at the last node
+            gradObj(i*7+2) = dphi_da*da_dS1 + dphi_db*db_dS1 + dphi_dc*dc_dS1;
+            gradObj(i*7+3) = dphi_da*da_dS2 + dphi_db*db_dS2 + dphi_dc*dc_dS2;
+
+            // derv w.r.t. a,b,c, but not at the last node!
+            if( i < M-1 )
+            {
+                gradObj(i*7+4) = dphi_da;
+                gradObj(i*7+5) = dphi_db;
+                gradObj(i*7+6) = dphi_dc;
+            }
+        }
+    }
+
+    // Telescope sum: subtract all phi(H_i+1) except at the last node
+    for( int i=0; i<M-1; i++ )
+    {
+        a = xi(i*7+4);
+        b = xi(i*7+5);
+        c = xi(i*7+6);
+
+        det = a*c - b*b;
+        det2 = det*det;
+
+        *objval -= (a+c) / det;
+
+        if( dmode > 0 )
+        {
+            gradObj(i*7+4) -= (c*c + b*b) / det2;
+            gradObj(i*7+5) += 2 * (c*b + b*a) / det2;
+            gradObj(i*7+6) -= (b*b + a*a) / det2;
+        }
+    }
+
+#else
+    a = xi(M+6*NS-3);
+    b = xi(M+6*NS-2);
+    c = xi(M+6*NS-1);
+    det = a*c - b*b;
+    det2 = det*det;
+
+    if( dmode > -1 )
+    {
+        *objval = (a+c) / det;
+    }
+
+    if( dmode > 0 )
+    {
+        gradObj.Initialisieren(0.0);
+        gradObj(M+6*NS-3) = - (c*c + b*b) / det2;
+        gradObj(M+6*NS-2) = 2 * (c*b + b*a) / det2;
+        gradObj(M+6*NS-1) = - (b*b + a*a) / det2;
+    }
+#endif
+#else
+    a = xi(M+3*NS+0);
+    b = xi(M+3*NS+1);
+    c = xi(M+3*NS+2);
+    det = a*c - b*b;
+    det2 = det*det;
+
+    if( dmode > -1 )
+    {
+        *objval = (a+c) / det;
+    }
+
+    if( dmode > 0 )
+    {
+        gradObj.Initialisieren(0.0);
+        gradObj(M+3*NS+0) = - (c*c + b*b) / det2;
+        gradObj(M+3*NS+1) = 2 * (c*b + b*a) / det2;
+        gradObj(M+3*NS+2) = - (b*b + a*a) / det2;
+    }
+#endif
+
+    if( dmode > 1 )
+    {
+        printf( "Second derivatives not supported!\n" );
+        *info = -1;
+    }
+}
+
+/**
+ * Evaluate constraints and derivatives.
+ * dmode = -1: set sparsity pattern of constraint Jacobian
+ * dmode =  0: constraint vector only
+ * dmode =  1: constraint vector and Jacobian
+ * dmode =  2: constraint vector, Jacobian and Hessian of the Lagrangian (don't use)
+ */
+void MyProblem::evalConstraints( Matrix xi, Matrix &constr, Matrix &constrJac, Matrix lambda, SymMatrix *&hess, int dmode, int *info )
+{
+    *info = 0;
+    if( nCon == 0 )
+        return;
+
+    int i, j, k, nq = 1;
+    double f0, p1, p2, q, a, b, c, s, S1, S2;
+    double df0_dp1, df0_dp2, dS1_dq, dS2_dq;
+    double sHelp, qHelp, S1Help, S2Help;
+
+    p1 = 0.5;
+    p2 = 0.5;
+    f0 = p1+p2;
+    df0_dp1 = 1.0;
+    df0_dp2 = 1.0;
+
+    a = xi(M+3*NS+0);
+    b = xi(M+3*NS+1);
+    c = xi(M+3*NS+2);
+
+#ifdef LIFTED
+    // Variable vector:
+    // ( q_0, s_1, S1_1, S2_1, q_1, ..., q_M-1, s_M, S1_M, S2_M, a, b, c )
+    if( dmode > 0 || dmode == -1 )
+        constrJac.Initialisieren( 0.0 );
+
+    // Initial values
+    s = f0;
+    S1 = df0_dp1;
+    S2 = df0_dp2;
+
+    // dF/dp**T * dF/dp
+    constr(0+3*NS) = S1*S1 - a;
+    constr(1+3*NS) = S1*S2 - b;
+    constr(2+3*NS) = S2*S2 - c;
+
+    // Shooting intervals ( = Summanden = Einzelmessungen)
+    for( i=0; i<M; i++ )
+    {
+        q = xi(4*i);
+
+        // Continuity conditions
+        constr(3*i+0) = fi( s, q, p1 );
+        constr(3*i+1) = dfi_ds( s, q, p1 ) * S1 + dfi_dp1( s, q, p1 );
+        constr(3*i+2) = dfi_ds( s, q, p1 ) * S2;//dfi_dp2( s, q, p2 )=0
+
+        if( dmode > 0 )
+        {
+            // Derv of continuity constraints w.r.t. q
+            constrJac( 3*i+0, 4*i+0 ) = dfi_dq(s,q,p1);
+            constrJac( 3*i+1, 4*i+0 ) = ddfi_dsdq(s,q,p1)*S1 + ddfi_dqdp1(s,q,p1);
+            constrJac( 3*i+2, 4*i+0 ) = ddfi_dsdq(s,q,p1)*S2;
+        }
+
+        if( dmode > 0 && i > 0)
+        {
+            // Derv of continuity constraints w.r.t. s
+            constrJac( 3*i+0, 4*(i-1)+1 ) = dfi_ds(s,q,p1);
+            constrJac( 3*i+1, 4*(i-1)+1 ) = ddfi_dsds(s,q,p1)*S1 + ddfi_dsdp1(s,q,p1);
+            constrJac( 3*i+2, 4*(i-1)+1 ) = ddfi_dsds(s,q,p1)*S2;
+
+            // Derv of continuity constraints w.r.t. S1
+            constrJac( 3*i+0, 4*(i-1)+2 ) = 0.0;
+            constrJac( 3*i+1, 4*(i-1)+2 ) = dfi_ds(s,q,p1);
+            constrJac( 3*i+2, 4*(i-1)+2 ) = 0.0;
+
+            // Derv of continuity constraints w.r.t. S2
+            constrJac( 3*i+0, 4*(i-1)+3 ) = 0.0;
+            constrJac( 3*i+1, 4*(i-1)+3 ) = 0.0;
+            constrJac( 3*i+2, 4*(i-1)+3 ) = dfi_ds(s,q,p1);
+        }
+
+        // Next step
+        s = xi(4*i+1);
+        S1 = xi(4*i+2);
+        S2 = xi(4*i+3);
+
+        // complete continuity constraints
+        constr(3*i+0) -= s;
+        constr(3*i+1) -= S1;
+        constr(3*i+2) -= S2;
+
+        // derivative w.r.t. next step
+        if( dmode > 0 )
+        {
+            constrJac( 3*i+0, 4*i+1 ) = -1.0;
+            constrJac( 3*i+1, 4*i+2 ) = -1.0;
+            constrJac( 3*i+2, 4*i+3 ) = -1.0;
+        }
+
+        // dF/dp**T * dF/dp
+        constr(0+3*NS) += S1*S1;
+        constr(1+3*NS) += S1*S2;
+        constr(2+3*NS) += S2*S2;
+
+        // derivative w.r.t. S1, S2
+        if( dmode > 0 )
+        {
+            constrJac(0+3*NS, 4*i+2) = 2*S1;
+            constrJac(1+3*NS, 4*i+2) = S2;
+            constrJac(2+3*NS, 4*i+2) = 0.0;
+
+            constrJac(0+3*NS, 4*i+3) = 0.0;
+            constrJac(1+3*NS, 4*i+3) = S1;
+            constrJac(2+3*NS, 4*i+3) = 2*S2;
+        }
+    }
+
+    if( dmode > 0 )
+    {
+        constrJac( nCon-1, nVar-1 ) = -1;
+        constrJac( nCon-2, nVar-2 ) = -1;
+        constrJac( nCon-3, nVar-3 ) = -1;
+
+//        constrJac.Ausgabe(stdout,3,1);
+    }
+#endif
+
+#ifdef LIFTED2
+    // Variable vector:
+    // ( q_0, s_1, S1_1, S2_1, a_1, b_1, c_1, q_1, ..., q_M-1, s_M, S1_M, S2_M, a, b, c )
+
+    if( dmode > 0 || dmode == -1 )
+        constrJac.Initialisieren( 0.0 );
+
+    double reg = 1e-4;
+    // Initial values
+    s = f0;
+    S1 = df0_dp1;
+    S2 = df0_dp2;
+    a = reg;
+    b = 0;
+    c = reg;
+
+    // Shooting intervals ( = Summanden = Einzelmessungen)
+    for( i=0; i<M; i++ )
+    {
+        q = xi(7*i);
+
+        // Continuity conditions
+        constr(6*i+0) = fi( s, q, p1 );
+        constr(6*i+1) = dfi_ds( s, q, p1 ) * S1 + dfi_dp1( s, q, p1 );
+        constr(6*i+2) = dfi_ds( s, q, p1 ) * S2;//dfi_dp2( s, q, p2 )=0
+        constr(6*i+3) = a + S1*S1;
+        constr(6*i+4) = b + S1*S2;
+        constr(6*i+5) = c + S2*S2;
+
+        if( dmode > 0 )
+        {
+            // Derv of continuity constraints w.r.t. q
+            constrJac( 6*i+0, 7*i+0 ) = dfi_dq(s,q,p1);
+            constrJac( 6*i+1, 7*i+0 ) = ddfi_dsdq(s,q,p1)*S1 + ddfi_dqdp1(s,q,p1);
+            constrJac( 6*i+2, 7*i+0 ) = ddfi_dsdq(s,q,p1)*S2;
+        }
+
+        if( dmode > 0 && i > 0)
+        {
+            // Derv of continuity constraints w.r.t. s
+            constrJac( 6*i+0, 7*(i-1)+1 ) = dfi_ds(s,q,p1);
+            constrJac( 6*i+1, 7*(i-1)+1 ) = ddfi_dsds(s,q,p1)*S1 + ddfi_dsdp1(s,q,p1);
+            constrJac( 6*i+2, 7*(i-1)+1 ) = ddfi_dsds(s,q,p1)*S2;
+
+            // Derv of continuity constraints w.r.t. S1
+            constrJac( 6*i+0, 7*(i-1)+2 ) = 0.0;
+            constrJac( 6*i+1, 7*(i-1)+2 ) = dfi_ds(s,q,p1);
+            constrJac( 6*i+2, 7*(i-1)+2 ) = 0.0;
+
+            // Derv of continuity constraints w.r.t. S2
+            constrJac( 6*i+0, 7*(i-1)+3 ) = 0.0;
+            constrJac( 6*i+1, 7*(i-1)+3 ) = 0.0;
+            constrJac( 6*i+2, 7*(i-1)+3 ) = dfi_ds(s,q,p1);
+
+            // Derv of pseudo continuity constraints w.r.t. a,b,c
+            constrJac( 6*i+3, 7*(i-1)+4 ) = 1.0;
+            constrJac( 6*i+4, 7*(i-1)+5 ) = 1.0;
+            constrJac( 6*i+5, 7*(i-1)+6 ) = 1.0;
+
+            // Derivatives of pseudo continuity constraints w.r.t. S1 and S2
+            constrJac( 6*i+3, 7*(i-1)+2 ) = 2*S1;
+            constrJac( 6*i+4, 7*(i-1)+2 ) = S2;
+            constrJac( 6*i+5, 7*(i-1)+2 ) = 0.0;
+
+            constrJac( 6*i+3, 7*(i-1)+3 ) = 0;
+            constrJac( 6*i+4, 7*(i-1)+3 ) = S1;
+            constrJac( 6*i+5, 7*(i-1)+3 ) = 2*S2;
+
+        }
+
+        // Next step
+        s = xi(7*i+1);
+        S1 = xi(7*i+2);
+        S2 = xi(7*i+3);
+        a = xi(7*i+4);
+        b = xi(7*i+5);
+        c = xi(7*i+6);
+
+        // complete continuity constraints
+        constr(6*i+0) -= s;
+        constr(6*i+1) -= S1;
+        constr(6*i+2) -= S2;
+
+        if( i < M-1 )
+        {
+            // Store state in global variables
+            aGlob[i] = constr(6*i+3);
+            bGlob[i] = constr(6*i+4);
+            cGlob[i] = constr(6*i+5);
+
+            constr(6*i+3) -= a;
+            constr(6*i+4) -= b;
+            constr(6*i+5) -= c;
+        }
+        else
+        {
+            // Store state in global variables
+            aGlob[i] = constr(6*i+3) + S1*S1;
+            bGlob[i] = constr(6*i+4) + S1*S2;
+            cGlob[i] = constr(6*i+5) + S2*S2;
+
+            constr(6*i+3) += S1*S1 - a;
+            constr(6*i+4) += S1*S2 - b;
+            constr(6*i+5) += S2*S2 - c;
+
+            // Derivatives of pseudo continuity constraints w.r.t. S1 and S2
+            if( dmode > 0 )
+            {
+                constrJac( 6*i+3, 7*i+2 ) = 2*S1;
+                constrJac( 6*i+4, 7*i+2 ) = S2;
+                constrJac( 6*i+5, 7*i+2 ) = 0.0;
+
+                constrJac( 6*i+3, 7*i+3 ) = 0;
+                constrJac( 6*i+4, 7*i+3 ) = S1;
+                constrJac( 6*i+5, 7*i+3 ) = 2*S2;
+            }
+        }
+
+        // derivative w.r.t. next step
+        if( dmode > 0 )
+        {
+            constrJac( 6*i+0, 7*i+1 ) = -1.0;
+            constrJac( 6*i+1, 7*i+2 ) = -1.0;
+            constrJac( 6*i+2, 7*i+3 ) = -1.0;
+            constrJac( 6*i+3, 7*i+4 ) = -1.0;
+            constrJac( 6*i+4, 7*i+5 ) = -1.0;
+            constrJac( 6*i+5, 7*i+6 ) = -1.0;
+        }
+    }
+    //constrJac.Ausgabe();
+#endif
+
+#ifdef UNLIFTED
+    constr(0) = -a;
+    constr(1) = -b;
+    constr(2) = -c;
+
+    // Summanden = Einzelmessungen
+    for( i=0; i<=M; i++ )
+    {
+        // Fuer jede Einzelmessung: Berechne komplette Dynamik bis zum Zeitpunkt i
+
+        // Initial values
+        s = f0;
+        S1 = df0_dp1;
+        S2 = df0_dp2;
+
+        for( j=0; j<i; j++ )
+        {
+            q = xi(j);
+
+            S1 = dfi_ds( s, q, p1 ) * S1 + dfi_dp1( s, q, p1 );
+            S2 = dfi_ds( s, q, p1 ) * S2;//dfi_dp2( s, q, p2 )=0
+
+            // Next step of the nominal state
+            s = fi( s, q, p1 );
+        }
+
+        // dF/dp**T * dF/dp
+        constr(0) += S1*S1;
+        constr(1) += S1*S2;
+        constr(2) += S2*S2;
+    }
+
+    if( dmode > 0 || dmode == -1 )
+    {
+        constrJac.Initialisieren( 0.0 );
+
+        // Summanden = Einzelmessungen
+        for( i=0; i<=M; i++ )
+        {
+            // Initial values
+            s = f0;
+            S1 = df0_dp1;
+            S2 = df0_dp2;
+
+            // Messung i liefert Beitraege zu den Ableitungen nach q_j, j<=i
+            for( j=0; j<i; j++ )
+            {
+                q = xi(j);
+
+                // Derv. w.r.t. q_j: start on interval j
+                dS1_dq = 0.0;
+                dS2_dq = 0.0;
+                dS1_dq = ( ddfi_dsds(s,q,p1)*dfi_dq(s,q,p1) + ddfi_dsdq(s,q,p1) ) * S1
+                        + dfi_ds(s,q,p1)*dS1_dq // = 0
+                        + ddfi_dsdp1(s,q,p1)*dfi_dq(s,q,p1) + ddfi_dqdp1(s,q,p1);
+
+                dS2_dq = ( ddfi_dsds(s,q,p1)*dfi_dq(s,q,p1) + ddfi_dsdq(s,q,p1) ) * S2
+                        + dfi_ds(s,q,p1)*dS2_dq; // = 0
+
+                // Next step of variational state w.r.t. p
+                S1 = dfi_ds(s,q,p1) * S1 + dfi_dp1(s,q,p1);
+                S2 = dfi_ds(s,q,p1) * S2;//dfi_dp2(s,q,p2)=0
+
+                // Next step of the nominal state
+                s = fi( s, q, p1 );
+
+                // Ableitung nach q_j fortsetzen auf den Intervallen j+1,..,i
+                sHelp = s;
+                S1Help = S1;
+                S2Help = S2;
+                for( k=j+1; k<i; k++ )
+                {
+                    qHelp = xi(k);
+
+                    dS1_dq = ddfi_dsds(sHelp,qHelp,p1)*dfi_dq(sHelp,qHelp,p1) * S1Help
+                            + dfi_ds(sHelp,qHelp,p1)*dS1_dq
+                            + ddfi_dsdp1(sHelp,qHelp,p1)*dfi_dq(sHelp,qHelp,p1);
+
+                    dS2_dq = ddfi_dsds(sHelp,qHelp,p1)*dfi_dq(sHelp,qHelp,p1) * S2Help
+                            + dfi_ds(sHelp,qHelp,p1)*dS2_dq;
+
+                    // Next step of variational state (for continuation of derv. w.r.t. q_j)
+                    S1Help = dfi_ds(sHelp,qHelp,p1) * S1Help + dfi_dp1(sHelp,qHelp,p1);
+                    S2Help = dfi_ds(sHelp,qHelp,p1) * S2Help;//dfi_dp2(s,q,p2)=0
+
+                    // Next step of nominal state (for continuation of derv. w.r.t. q_j)
+                    sHelp = fi( sHelp, qHelp, p1 );
+                }
+
+                constrJac(0,j) += 2.0 * dS1_dq * S1Help;
+                constrJac(1,j) += dS1_dq * S2Help + S1Help * dS2_dq;
+                constrJac(2,j) += 2.0 * dS2_dq * S2Help;
+            }
+        }
+
+        constrJac( nCon-1, nVar-1 ) = -1;
+        constrJac( nCon-2, nVar-2 ) = -1;
+        constrJac( nCon-3, nVar-3 ) = -1;
+    }
+#endif
+
+    if( dmode > 1 )
+    {
+        printf( "Second derivatives not supported!\n" );
+        *info = -1;
+    }
+}
+
+
+int main( int argc, const char* argv[] )
+{
+    int ret = 0;
+    MyProblem *prob;
+    SQPmethod *meth;
+    SQPoptions *opts;
+    SQPstats *stats;
+    char outpath[255];
+    strcpy( outpath, "./" );
+
+    // Options for SQP solver
+    opts = new SQPoptions();
+    opts->skipFirstGlobalization = true;
+    opts->opttol = 1.0e-8;
+    opts->nlinfeastol = 1.0e-8;
+    opts->inf = 1.0e20;
+    opts->eps = 1.0e-16;
+    opts->conSecondDerv = 0;
+    opts->objSecondDerv = 0;
+    opts->hessUpdate = 2;
+    opts->hessScaling = 0;
+    opts->fallbackScaling = 0;
+    opts->blockHess = 1;
+    opts->restoreFeas = 0;
+    opts->globalization = 1;
+    opts->hessMemsize = 200;
+
+    // Create problem (evaluation) object
+    int nVar = 3+M+3*NS;
+    int nCon = 3+3*NS;
+#ifdef LIFTED2
+    nVar = M+6*NS;
+    nCon = 6*NS;
+#endif
+
+    Matrix bl, bu, x0;
+    x0.Dimension( nVar ).Initialisieren( 0.2 );
+    bl.Dimension( nVar+nCon ).Initialisieren( -myInf );
+    bu.Dimension( nVar+nCon ).Initialisieren( myInf );
+
+    // Controls between 0 and 1
+    for( int i=0; i<M; i++ )
+    {
+
+#ifdef UNLIFTED
+        bl( i ) = 0.1;
+        bu( i ) = 0.5;
+#endif
+#ifdef LIFTED
+        bl( 4*i ) = 0.1;
+        bu( 4*i ) = 0.5;
+#endif
+#ifdef LIFTED2
+        bl( 7*i ) = 0.1;
+        bu( 7*i ) = 1.3;
+#endif
+    }
+
+    // Equality constraints
+    for( int i=nVar; i<nVar+nCon; i++ )
+        bl(i) = bu(i) = 0.0;
+
+    // Hessian block structure
+    int nBlocks ;
+    int *blockIdx;
+
+#ifdef UNLIFTED
+    nBlocks = 2;
+    blockIdx[0] = 0;
+    blockIdx[1] = M;
+    blockIdx[2] = nVar;
+#endif
+
+#ifdef LIFTED
+    nBlocks = NS+1;
+    blockIdx = new int[nBlocks+1];
+    blockIdx[0] = 0;
+    blockIdx[1] = 1;
+    for( int i=2; i<NS+1; i++ )
+        blockIdx[i] = 1+4*(i-1);
+    blockIdx[nBlocks] = nVar;
+
+    printf("block structure:\n");
+    for( int i=0; i<nBlocks+1; i++ )
+        printf(" %i", blockIdx[i]);
+    printf("\n");
+#endif
+
+#ifdef LIFTED2
+    nBlocks = NS+1;
+    blockIdx = new int[nBlocks+1];
+    blockIdx[0] = 0;
+    for( int i=1; i<NS+1; i++ )
+        blockIdx[i] = 1+7*(i-1);
+    blockIdx[nBlocks] = nVar;
+
+    printf("block structure:\n");
+    for( int i=0; i<nBlocks+1; i++ )
+        printf(" %i", blockIdx[i]);
+    printf("\n");
+
+#endif
+
+    prob = new MyProblem( nVar, nCon, nBlocks, blockIdx, bl, bu, x0 );
+
+    // Create blockSQP method including memory allocation for iterate
+    stats = new SQPstats( outpath );
+    meth = new SQPmethod( prob, opts, stats );
+
+    ret = meth->init();
+    ret = meth->run( 100 );
+    meth->finish();
+    if( ret == 1 )
+        printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");
+
+    printf("\nPrimal solution:\n");
+    meth->vars->xi.Ausgabe();
+    //printf("\nConstraints:\n");
+    //meth->vars->constr.Ausgabe();
+    printf("\nDual solution:\n");
+    meth->vars->lambda.Ausgabe();
+
+    // Clean up
+    delete prob;
+    delete meth;
+    delete stats;
+    delete opts;
+}
+
+
