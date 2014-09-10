@@ -10,7 +10,6 @@ class MyProblem : public Problemspec
 {
     public:
         Matrix xi0;
-        Matrix a;
 
     public:
         MyProblem( int nVar_, int nCon_, int nBlocks_, int *BlockIdx_, Matrix bl_, Matrix bu_, Matrix xi0_ );
@@ -201,16 +200,10 @@ void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &cons
         convertJacobian( constrJac, jacNz, jacIndRow, jacIndCol, 0 );
 }
 
-#define MINEX
-//#define OEDTYPE
-//#define OEDTYPE_LIFTED
-#define NMESS 10
-
 /**
  * Evaluate functions and derivatives.
  * dmode = 0: objective and constraint evaluation
  * dmode = 1: objective gradient and constraint Jacobian
- * dmode = 2: objective gradient, constraint Jacobian and Hessian of the Lagrangian (not ready to use yet)
  */
 void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &constr,
                            Matrix &gradObj, Matrix &constrJac, SymMatrix *&hess,
@@ -218,48 +211,6 @@ void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &cons
 {
     *info = 0;
 
-#ifdef OEDTYPE
-    if( dmode >= 0 )
-    {
-        *objval = 0.0;
-        for( int i=0; i<NMESS; i++ )
-            *objval += ( a(i)*a(i)*xi(i)*xi(i) );
-        *objval = 1.0 / *objval;
-    }
-
-    if( dmode > 0 )
-    {
-        for( int i=0; i<NMESS; i++ )
-            gradObj( i ) = -(*objval)*(*objval) * 2.0*a(i)*a(i)*xi(i);
-    }
-#endif
-
-#ifdef OEDTYPE_LIFTED
-    double y = xi( nVar-1 );
-
-    if( dmode >= 0 )
-    {
-        *objval = 1.0 / y;
-
-        constr( 0 ) = 0.0;
-        for( int i=0; i<NMESS; i++ )
-            constr( 0 ) += ( a(i)*a(i)*xi(i)*xi(i) );
-        constr( 0 ) -= y;
-    }
-
-    if( dmode > 0 )
-    {
-        for( int i=0; i<NMESS; i++ )
-        {
-            gradObj( i ) = 0.0;
-            constrJac( 0, i ) = 2.0*a(i)*a(i)*xi(i);
-        }
-        gradObj( NMESS ) = -1.0 / ( y*y );
-        constrJac( 0, NMESS ) = -1.0;
-    }
-#endif
-
-#ifdef MINEX
     if( dmode >= 0 )
     {
         *objval = xi(0)*xi(0) - 0.5*xi(1)*xi(1);
@@ -273,13 +224,6 @@ void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &cons
 
         constrJac( 0, 0 ) = 1.0;
         constrJac( 0, 1 ) = -1.0;
-    }
-#endif
-
-    if( dmode > 1 )
-    {
-        printf( "Second derivatives not supported!\n" );
-        *info = -1;
     }
 }
 
@@ -296,91 +240,11 @@ int main( int argc, const char* argv[] )
     char outpath[255];
     strcpy( outpath, "./" );
 
-    // Options for SQP solver
-    opts = new SQPoptions();
-    opts->opttol = 1.0e-12;
-    opts->nlinfeastol = 1.0e-12;
-    opts->conSecondDerv = 0;
-    opts->objSecondDerv = 0;
-    opts->hessUpdate = 2;
-    opts->hessScaling = 0;
-    opts->fallbackScaling = 0;
-    opts->hessLimMem = 1;
-    opts->hessMemsize = 200;
-    opts->maxConsecSkippedUpdates = 200;
-    opts->blockHess = 1;
-    opts->restoreFeas = 0;
-    opts->globalization = 0;
-    opts->iniHessDiag = 1.0;
 
-    ////////////////////////////////////////////////////////////////////
+    /*--------------------*/
+    /* Setup problem data */
+    /*--------------------*/
 
-    // Measurement weights
-    Matrix a;
-    a.Dimension( NMESS );
-    for( int i=1; i<NMESS+1; i++ )
-        a( i-1 ) = 0.1*i;
-
-#ifdef OEDTYPE
-    // Setup problem data
-    int nVar = NMESS;
-    int nCon = 0;
-
-    // Variable bounds
-    Matrix bl, bu;
-    bl.Dimension( nVar+nCon ).Initialisieren( 0.5 );
-    bu.Dimension( nVar+nCon ).Initialisieren( 1 );
-
-    // Initial values
-    Matrix x0;
-    x0.Dimension( nVar );
-    for( int i=0; i<NMESS; i++ )
-        x0( i ) = bl( i );
-
-    // Variable partition for block Hessian
-    int nBlocks = 1;
-    int blockIdx[nBlocks+1];
-    blockIdx[0] = 0;
-    blockIdx[1] = nVar;
-#endif
-
-#ifdef OEDTYPE_LIFTED
-        // Setup problem data
-    int nVar = NMESS+1;
-    int nCon = 1;
-
-    // Variable bounds
-    Matrix bl, bu;
-    bl.Dimension( nVar+nCon ).Initialisieren( -myInf );
-    bu.Dimension( nVar+nCon ).Initialisieren( myInf );
-    for( int i=0; i<NMESS; i++ )
-    {
-        bl( i ) = 0.5;
-        bu( i ) = 1;
-    }
-
-    // Initial values
-    Matrix x0;
-    x0.Dimension( nVar ).Initialisieren( 0.0 );
-    for( int i=0; i<NMESS; i++ )
-    {
-        x0( i ) = bl( i );
-        x0( nVar-1 ) += a(i)*a(i)*x0(i)*x0(i);
-    }
-
-    // Constraint bounds
-    bl( nVar ) = bu( nVar ) = 0.0;
-
-    // Variable partition for block Hessian
-    int nBlocks = NMESS+1;
-    int blockIdx[nBlocks+1];
-    for( int i=0; i<NMESS+1; i++ )
-        blockIdx[i] = i;
-    blockIdx[NMESS+1] = nVar;
-#endif
-
-#ifdef MINEX
-    // Setup problem data
     int nVar = 2;
     int nCon = 1;
 
@@ -404,15 +268,41 @@ int main( int argc, const char* argv[] )
     blockIdx[0] = 0;
     blockIdx[1] = 1;
     blockIdx[2] = nVar;
-#endif
-    ////////////////////////////////////////////////////////////////////
 
-    // Create problem (evaluation) object
+    // Create problem evaluation object
     prob = new MyProblem( nVar, nCon, nBlocks, blockIdx, bl, bu, x0 );
 
-    prob->a = Matrix( a );
 
-    // Create blockSQP method including memory allocation for iterate
+    /*------------------------*/
+    /* Options for SQP solver */
+    /*------------------------*/
+
+    opts = new SQPoptions();
+    opts->opttol = 1.0e-12;
+    opts->nlinfeastol = 1.0e-12;
+
+    // 0: no globalization, 1: filter line search
+    opts->globalization = 0;
+    // 0: (scaled) identity, 1: SR1, 2: BFGS
+    opts->hessUpdate = 2;
+    // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
+    // 2: scale initial Hessian with Oren-Luenberger factor 3: scale initial Hessian with geometric mean of 1 and 2
+    // 4: scale Hessian in every step with centered Oren-Luenberger sizing according to Tapia paper
+    opts->hessScaling = 0;
+    // scaling strategy for fallback BFGS update if SR1 and globalization is used
+    opts->fallbackScaling = 0;
+    // Size of limited memory
+    opts->hessMemsize = 200;
+    // If too many updates are skipped, reset Hessian
+    opts->maxConsecSkippedUpdates = 200;
+    // 0: full space Hessian approximation (ignore block structure), 1: blockwise updates
+    opts->blockHess = 1;
+
+
+    /*-------------------------------------------------*/
+    /* Create blockSQP method object and run algorithm */
+    /*-------------------------------------------------*/
+
     stats = new SQPstats( outpath );
     meth = new SQPmethod( prob, opts, stats );
 

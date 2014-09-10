@@ -17,7 +17,7 @@ SQPoptions::SQPoptions()
     // General algorithmic options
 
     // 0: no globalization, 1: filter line search
-    globalization = 0;
+    globalization = 1;
 
     // 0: no feasibility restoration phase 1: if line search fails, start feasibility restoration phase
     restoreFeas = 0;
@@ -41,8 +41,8 @@ SQPoptions::SQPoptions()
     // 2: scale initial Hessian with Oren-Luenberger factor 3: geometric mean of 1 and 2
     // 4: centered Oren-Luenberger sizing according to Tapia paper
     // 5: Byrd-Lu scaling (for L-SR1 only)
-    hessScaling = 0;
-    fallbackScaling = 0;
+    hessScaling = 2;
+    fallbackScaling = 4;
     iniHessDiag = 1.0;
 
     // Damping factor for Powell modification of BFGS updates ( between 0.0 and 1.0 )
@@ -56,13 +56,13 @@ SQPoptions::SQPoptions()
     hessLimMem = 1;
 
     // memory size for L-BFGS/L-SR1 updates
-    hessMemsize = 200;
+    hessMemsize = 20;
 
     // maximum number of line search iterations
     maxLineSearch = 30;
 
     // if step has to be reduced in too many consecutive iterations, feasibility restoration phase is invoked
-    maxConsecReducedSteps = 250;
+    maxConsecReducedSteps = 100;
 
     // maximum number of SOC line search iterations
     maxSOCiter = 2;

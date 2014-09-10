@@ -277,4 +277,6 @@ void SQPiterate::initIterate( SQPoptions* param )
     lambdaStepNorm = 0.0;
 }
 
+///\todo destructor
+
 } // namespace blockSQP
