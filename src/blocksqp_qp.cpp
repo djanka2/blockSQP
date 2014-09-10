@@ -1,5 +1,8 @@
 #include "blocksqp.hpp"
+#include "blocksqp_general_purpose.hpp"
 
+namespace blockSQP
+{
 
 /**
  * Call external solver qpOASES. The classes and methods are declared in qpOASES.hpp
@@ -783,6 +786,6 @@ void SQPmethod::updateStepBounds( bool soc )
     }
 }
 
-
+} // namespace blockSQP
 
 

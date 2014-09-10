@@ -1,5 +1,8 @@
 #include "blocksqp.hpp"
 
+namespace blockSQP
+{
+
 /**
  * Standard Constructor:
  * Default settings
@@ -113,3 +116,5 @@ void SQPoptions::optionsConsistency()
     //if( vars->objLo < -1.0 )
         //objSecondDerv = 0;
 }
+
+} // namespace blockSQP

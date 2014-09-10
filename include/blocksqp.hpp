@@ -3,9 +3,8 @@
 
 //#define MYDEBUG                 ///< Print debug information (impairs performance)
 
-#include "defs.hpp"
-#include "matrix.hpp"
-#include "general_purpose.hpp"
+#include "blocksqp_defs.hpp"
+#include "blocksqp_matrix.hpp"
 
 // (ABSTRACT) PROBLEM CLASS
 #include "blocksqp_problemspec.hpp"
@@ -29,6 +28,8 @@
 #define QPSOLVER_DENSE
 #endif
 
+namespace blockSQP
+{
 
 /**
  * \brief Contains algorithmic options and parameters for SQP method
@@ -390,5 +391,7 @@ class SQPmethod
         /// [blockwise] Compute initial scaling for L-SR1 matrix
         int sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock );
 };
+
+} // namespace blockSQP
 
 #endif

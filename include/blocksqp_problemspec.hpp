@@ -6,8 +6,11 @@
 #ifndef BLOCKSQP_PROBLEMSPEC_HPP
 #define BLOCKSQP_PROBLEMSPEC_HPP
 
-#include "defs.hpp"
-#include "matrix.hpp"
+#include "blocksqp_defs.hpp"
+#include "blocksqp_matrix.hpp"
+
+namespace blockSQP
+{
 
 /**
  * \brief Base class for problem specification as required by SQP algorithm
@@ -132,6 +135,7 @@ class RestorationProblem : public Problemspec
         virtual void printConstraints( Matrix constr, Matrix lambda );
 };
 
+} // namespace blockSQP
 
 #endif
 

@@ -19,9 +19,9 @@ OBJECTS = $(OBJDIR)/blocksqp_glob.o \
 		$(OBJDIR)/blocksqp_qp.o \
 		$(OBJDIR)/blocksqp_restoration.o \
 		$(OBJDIR)/blocksqp_stats.o \
-		$(OBJDIR)/general_purpose.o \
-		$(OBJDIR)/matrix.o \
-		$(OBJDIR)/symmatrix.o
+		$(OBJDIR)/blocksqp_general_purpose.o \
+		$(OBJDIR)/blocksqp_matrix.o \
+		$(OBJDIR)/blocksqp_symmatrix.o
 
 
 

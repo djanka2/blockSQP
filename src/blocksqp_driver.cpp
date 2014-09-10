@@ -1,5 +1,8 @@
 #include "blocksqp.hpp"
 
+namespace blockSQP
+{
+
 /**
  * Derived class from generic problem specification class that implements all abstract methods
  */
@@ -280,9 +283,11 @@ void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &cons
     }
 }
 
+} // namespace blockSQP
 
 int main( int argc, const char* argv[] )
 {
+    using namespace blockSQP;
     int ret = 0;
     MyProblem *prob;
     SQPmethod *meth;
@@ -431,5 +436,4 @@ int main( int argc, const char* argv[] )
     delete stats;
     delete opts;
 }
-
 

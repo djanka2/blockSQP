@@ -1,5 +1,8 @@
 #include "blocksqp.hpp"
 
+namespace blockSQP
+{
+
 /**
  * Derived class from generic problem specification class that implements all abstract methods
  */
@@ -432,4 +435,4 @@ int main( int argc, const char* argv[] )
     delete opts;
 }
 
-
+} // namespace blockSQP

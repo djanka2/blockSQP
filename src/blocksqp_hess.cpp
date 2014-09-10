@@ -1,4 +1,8 @@
 #include "blocksqp.hpp"
+#include "blocksqp_general_purpose.hpp"
+
+namespace blockSQP
+{
 
 /**
  * Initial Hessian: Identity matrix
@@ -704,5 +708,5 @@ void SQPmethod::updateDeltaGamma()
     vars->gamma.Teilmatrix( vars->gammaMat, nVar, 1, 0, stats->itCount % m );
 }
 
-
+} // namespace blockSQP
 

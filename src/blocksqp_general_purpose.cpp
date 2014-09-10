@@ -2,8 +2,10 @@
 // THIS IS A DUPLICATE OF THE VPLAN FILE. IT IS INTENDED FOR THE STANDALONE VERSION OF BLOCKSQP.
 //
 
-#include "general_purpose.hpp"
+#include "blocksqp_general_purpose.hpp"
 
+namespace blockSQP
+{
 
 /**
  * Compute eigenvalues of a symmetric matrix by DSPEV
@@ -526,7 +528,7 @@ void constructMyInv( int dimH, Matrix measContrib, Matrix Cj, Matrix &myInv, int
             temp( i, j ) = temp( j, i ) = Cj( count++ );
 
     // Identity matrix
-    myInv.Dimension( dimH, dimH , dimH ).Initialisieren( ::delta );
+    myInv.Dimension( dimH, dimH , dimH ).Initialisieren( blockSQP::delta );
 
     if( mode == 0 )
         symmetricMultiplication( measContrib, temp, myInv, "L", 1 );
@@ -563,3 +565,5 @@ void constructMyInv2( int dimH, Matrix CjInv, Matrix measContrib, Matrix &myInv2
 
     symmetricInverse2( temp, myInv2);
 }
+
+} // namespace blockSQP

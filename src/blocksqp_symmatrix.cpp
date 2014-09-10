@@ -5,8 +5,10 @@
 #include <string.h>
 #include <math.h>
 
-#include "matrix.hpp"
+#include "blocksqp_matrix.hpp"
 
+namespace blockSQP
+{
 
 int SymMatrix::malloc( void )
 {
@@ -313,3 +315,4 @@ SymMatrix &SymMatrix::Teilmatrix_del( void )
 //     Fehler("...to be implemented.");
 // }
 
+} // namespace blockSQP

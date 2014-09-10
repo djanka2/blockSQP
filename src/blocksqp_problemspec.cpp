@@ -1,5 +1,8 @@
 #include "blocksqp_problemspec.hpp"
 
+namespace blockSQP
+{
+
 void Problemspec::evaluate( Matrix xi, double *objval, Matrix &constr, int *info )
 {
     Matrix lambdaDummy, gradObjDummy;
@@ -16,3 +19,5 @@ void Problemspec::evaluate( Matrix xi, double *objval, Matrix &constr, int *info
     evaluate( xi, lambdaDummy, objval, constr, gradObjDummy, constrJacDummy, hessDummy, dmode, info );
     #endif
 }
+
+} // namespace blockSQP

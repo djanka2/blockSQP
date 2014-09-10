@@ -1,4 +1,8 @@
 #include "blocksqp.hpp"
+#include "blocksqp_general_purpose.hpp"
+
+namespace blockSQP
+{
 
 void SQPmethod::acceptStep( double alpha, double alphaSOC )
 {
@@ -648,3 +652,4 @@ void SQPmethod::augmentFilter( double cNorm, double obj )
     //printf("\n");
 }
 
+} // namespace blockSQP

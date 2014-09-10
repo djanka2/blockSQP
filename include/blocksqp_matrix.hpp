@@ -7,12 +7,14 @@
  *  computations is given.
  */
 
-#ifndef MATRIX_HPP
-#define MATRIX_HPP
+#ifndef BLOCKSQP_MATRIX_HPP
+#define BLOCKSQP_MATRIX_HPP
 
 #include <stdio.h>
 #include <string>
 
+namespace blockSQP
+{
 
 /* ----------------------------------------------------------------------- */
 
@@ -177,5 +179,7 @@ Matrix operator-( const Matrix& A, const Matrix& B);
 Matrix operator*( const Matrix& A, const Matrix& B);
 
 /* ----------------------------------------------------------------------- */
+
+} // namespace blockSQP
 
 #endif

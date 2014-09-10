@@ -1,4 +1,8 @@
 #include "blocksqp.hpp"
+#include "blocksqp_general_purpose.hpp"
+
+namespace blockSQP
+{
 
 SQPmethod::SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *statistics )
 {
@@ -393,3 +397,5 @@ void SQPmethod::printInfo()
     printf("Using QPOPT.\n");
     #endif
 }
+
+} // namespace blockSQP

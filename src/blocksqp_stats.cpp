@@ -1,4 +1,8 @@
 #include "blocksqp.hpp"
+#include "blocksqp_general_purpose.hpp"
+
+namespace blockSQP
+{
 
 SQPstats::SQPstats( PATHSTR myOutpath )
 {
@@ -608,3 +612,5 @@ void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars )
             //for( k=0; k<prob->expEval[iExOpt]->measContrib[iShoot].M(); k++ )
                 //prob->refF1( count++ ) = prob->expEval[iExOpt]->measContrib[iShoot]( k );
 //}
+
+} // namespace blockSQP

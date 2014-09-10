@@ -1,5 +1,8 @@
 #include "blocksqp_problemspec.hpp"
 
+namespace blockSQP
+{
+
 RestorationProblem::RestorationProblem( Problemspec *parentProblem, Matrix xiReference, Matrix constrReference )
 {
     int i, iVar, iCon, ieqCnt;
@@ -350,3 +353,5 @@ void RestorationProblem::printInfo()
 {
     printf("Minimum norm NLP to find a point acceptable to the filter\n");
 }
+
+} // namespace blockSQP

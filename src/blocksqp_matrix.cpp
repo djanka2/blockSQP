@@ -17,8 +17,10 @@
 #include <string.h>
 #include <math.h>
 
-#include "matrix.hpp"
+#include "blocksqp_matrix.hpp"
 
+namespace blockSQP
+{
 
 // #define MATRIX_DEBUG
 #define STANDALONE
@@ -722,3 +724,5 @@ std::string Matrix::str()
   }
   return retval;
 }
+
+} // namespace blockSQP

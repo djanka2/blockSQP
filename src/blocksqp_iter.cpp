@@ -1,5 +1,8 @@
 #include "blocksqp.hpp"
 
+namespace blockSQP
+{
+
 SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
 {
     int maxblocksize = 1;
@@ -274,3 +277,4 @@ void SQPiterate::initIterate( SQPoptions* param )
     lambdaStepNorm = 0.0;
 }
 
+} // namespace blockSQP

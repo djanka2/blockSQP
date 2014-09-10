@@ -6,7 +6,10 @@
 #include "string.h"
 
 #include "lapack.h"
-#include "matrix.hpp"
+#include "blocksqp_matrix.hpp"
+
+namespace blockSQP
+{
 
 int oedPhi( int dimH, Matrix vecH, int *row, int *col, double *phi, Matrix &dphi, SymMatrix &ddphi, int dmode );
 int calcEigenvalues( SymMatrix B, Matrix &ev );
@@ -28,5 +31,7 @@ void symmetricMultiplication( Matrix A, Matrix B, Matrix &C, char *side, int mod
 int inverse( Matrix A, Matrix &Ainv );
 void constructMyInv( int dimH, Matrix measContrib, Matrix Cj, Matrix &myInv, int mode );
 void constructMyInv2( int dimH, Matrix CjInv, Matrix measContrib, Matrix &myInv2 );
+
+} // namespace blockSQP
 
 #endif
