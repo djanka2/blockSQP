@@ -158,11 +158,13 @@ SymMatrix::SymMatrix( const SymMatrix &A )
 }
 
 
-// SymMatrix::~SymMatrix( void )
-// {
-//     if( !tflag )
-//         free();
-// }
+SymMatrix::~SymMatrix( void )
+{
+    Dcount++;
+
+    if( !tflag )
+        free();
+}
 
 
 SymMatrix &SymMatrix::operator=( const Matrix &A )

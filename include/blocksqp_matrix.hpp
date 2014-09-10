@@ -120,7 +120,7 @@ class SymMatrix : public Matrix
         SymMatrix( int, int, double*, int = -1 );
         SymMatrix( const Matrix& );
         SymMatrix( const SymMatrix& );
-//         ~SymMatrix( void );
+        ~SymMatrix( void );
 
         SymMatrix &operator=( const Matrix& );
         virtual double &operator()( int i, int j );
