@@ -11,12 +11,6 @@
 /* Matrix-Datentyp */
 /* von Stefan Koerkel 1993-98 */
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-
 #include "blocksqp_matrix.hpp"
 
 namespace blockSQP
@@ -31,7 +25,7 @@ namespace blockSQP
 
 void Fehler( const char *F )
 {    printf("Fehler: %s\n", F );
-     exit( 1 );
+     //exit( 1 );
 }
 
 #endif
@@ -548,12 +542,6 @@ double einsentry( int, int )
 {    return 1.0;
 }
 
-
-double randomentry( int, int )
-{    const double base = 32767.0;
-
-     return 2.0 * ( rand() / base ) - 1.0;
-}
 
 /* ----------------------------------------------------------------------- */
 

@@ -370,7 +370,7 @@ int SQPmethod::sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock )
     C = Matrix( W );
     work = new double[lwork];
 
-    dsyev( "V", "L", &m, C.ARRAY(), &ldim,
+    dsyev_( "V", "L", &m, C.ARRAY(), &ldim,
             N.ARRAY(), work, &lwork, &info, strlen("V"), strlen("L") );
 
     if( info != 0 )
@@ -425,7 +425,7 @@ int SQPmethod::sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock )
         Matrix ev;
         ev.Dimension( m ).Initialisieren( 0.0 );
         ldim = Q.LDIM();
-        dsyev( "N", "L", &m, Q.ARRAY(), &ldim,
+        dsyev_( "N", "L", &m, Q.ARRAY(), &ldim,
                ev.ARRAY(), work, &lwork, &info, strlen("N"), strlen("L") );
 
         double maxEig = 0.0;

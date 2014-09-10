@@ -1,32 +1,9 @@
 #ifndef BLOCKSQP_HPP
 #define BLOCKSQP_HPP
 
-//#define MYDEBUG                 ///< Print debug information (impairs performance)
-
 #include "blocksqp_defs.hpp"
 #include "blocksqp_matrix.hpp"
-
-// (ABSTRACT) PROBLEM CLASS
 #include "blocksqp_problemspec.hpp"
-
-// QPSOLVER
-//#define QPSOLVER_QPOPT
-//#define QPSOLVER_QPOASES_DENSE
-//#define QPSOLVER_QPOASES_SPARSE
-#define QPSOLVER_QPOASES_SCHUR
-
-#ifdef QPSOLVER_QPOPT
-#include "qpopt.h"
-#elif defined QPSOLVER_QPOASES_SPARSE || defined QPSOLVER_QPOASES_DENSE || defined QPSOLVER_QPOASES_SCHUR
-#define QPSOLVER_QPOASES
-#include "qpOASES.hpp"
-#endif
-
-#if defined QPSOLVER_QPOASES_SPARSE || defined QPSOLVER_QPOASES_SCHUR
-#define QPSOLVER_SPARSE
-#else
-#define QPSOLVER_DENSE
-#endif
 
 namespace blockSQP
 {

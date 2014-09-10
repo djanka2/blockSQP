@@ -10,8 +10,7 @@
 #ifndef BLOCKSQP_MATRIX_HPP
 #define BLOCKSQP_MATRIX_HPP
 
-#include <stdio.h>
-#include <string>
+#include "blocksqp_defs.hpp"
 
 namespace blockSQP
 {

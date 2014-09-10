@@ -10,17 +10,17 @@ SRCDIR = src
 LIBDIR = lib
 DEFS =
 
-OBJECTS = $(OBJDIR)/blocksqp_glob.o \
+OBJECTS = $(OBJDIR)/blocksqp_general_purpose.o \
+		$(OBJDIR)/blocksqp_glob.o \
 		$(OBJDIR)/blocksqp_hess.o \
 		$(OBJDIR)/blocksqp_iter.o \
 		$(OBJDIR)/blocksqp_main.o \
+		$(OBJDIR)/blocksqp_matrix.o \
 		$(OBJDIR)/blocksqp_options.o \
 		$(OBJDIR)/blocksqp_problemspec.o \
 		$(OBJDIR)/blocksqp_qp.o \
 		$(OBJDIR)/blocksqp_restoration.o \
 		$(OBJDIR)/blocksqp_stats.o \
-		$(OBJDIR)/blocksqp_general_purpose.o \
-		$(OBJDIR)/blocksqp_matrix.o \
 		$(OBJDIR)/blocksqp_symmatrix.o
 
 
