@@ -91,13 +91,10 @@ class SQPiterate
         Matrix lambda;                                  ///< dual variables
         Matrix constr;                                  ///< constraint vector
 
-        #ifdef QPSOLVER_DENSE
         Matrix constrJac;                               ///< full constraint Jacobian (without condensing)
-        #else
         double *jacNz;                                  ///< nonzero elements of Jacobian (length)
         int *jacIndRow;                                 ///< row indices (length)
         int *jacIndCol;                                 ///< indices to first entry of columns (nCols+1)
-        #endif
 
         Matrix deltaMat;                                ///< last m steps
         Matrix deltaXi;                                 ///< alias for current step
@@ -165,6 +162,7 @@ class SQPiterate
         void allocAlg( Problemspec* prob, SQPoptions* param );
         /// Set initial filter, objective function, tolerances etc.
         void initIterate( SQPoptions* param );
+        ~SQPiterate( void );
 };
 
 
@@ -263,6 +261,7 @@ class SQPmethod
     public:
         /// Construct a method for a given problem and set of algorithmic options
         SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *statistics );
+        ~SQPmethod();
         /// Initialization, has to be called before run
         int init();
         /// Main Loop of SQP method

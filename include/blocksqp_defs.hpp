@@ -12,9 +12,9 @@
 
 // Choice of QP solver
 //#define QPSOLVER_QPOPT
-//#define QPSOLVER_QPOASES_DENSE
+#define QPSOLVER_QPOASES_DENSE
 //#define QPSOLVER_QPOASES_SPARSE
-#define QPSOLVER_QPOASES_SCHUR
+//#define QPSOLVER_QPOASES_SCHUR
 
 /*--------------------------------------------------------------------*/
 

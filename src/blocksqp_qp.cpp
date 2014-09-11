@@ -17,7 +17,6 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     qpOASES::SymmetricMatrix *H;
     qpOASES::Options opts;
     qpOASES::returnValue ret;
-    double *H_vals;
     double *lb, *lu, *lbA, *luA;
     double cpuTime;
     int maxIt;
@@ -47,7 +46,6 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
         A = new qpOASES::SparseMatrix( prob->nCon, prob->nVar, vars->jacIndRow, vars->jacIndCol, vars->jacNz );
 #else
         // Convert diagonal block Hessian to double array
-        H_vals = new double[prob->nVar*prob->nVar];
         int count = 0;
         int blockCnt = 0;
         for( int i=0; i<prob->nVar; i++ )
@@ -56,15 +54,14 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                 if( i == vars->blockIdx[blockCnt+1] )
                     blockCnt++;
                 if( j >= vars->blockIdx[blockCnt] && j < vars->blockIdx[blockCnt+1] )
-                    H_vals[count++] = vars->hess[blockCnt]( i - vars->blockIdx[blockCnt], j - vars->blockIdx[blockCnt] );
+                    vars->hessNz[count++] = vars->hess[blockCnt]( i - vars->blockIdx[blockCnt], j - vars->blockIdx[blockCnt] );
                 else
-                    H_vals[count++] = 0.0;
+                    vars->hessNz[count++] = 0.0;
             }
-        H = new qpOASES::SymDenseMat( prob->nVar, prob->nVar, prob->nVar, H_vals );
+        H = new qpOASES::SymDenseMat( prob->nVar, prob->nVar, prob->nVar, vars->hessNz );
 
         // transpose Jacobian (qpOASES needs row major arrays)
-
-        Transponierte( vars->constrJac, jacT );
+        Transpose( vars->constrJac, jacT );
         A = new qpOASES::DenseMatrix( prob->nCon, prob->nVar, prob->nVar, jacT.ARRAY() );
 #endif
     }
@@ -120,7 +117,6 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     sparseAtimesb( vars->jacNz, vars->jacIndRow, vars->jacIndCol, deltaXi, vars->AdeltaXi );
     #else
     Atimesb( vars->constrJac, deltaXi, vars->AdeltaXi );
-    delete[] H_vals;
     #endif
 
     /* Print qpOASES error code (if postprocessQP is called, don't print error from first QP or SOC) */
@@ -346,7 +342,7 @@ qpOASES::returnValue SQPmethod::postprocessQP_Id( qpOASES::returnValue ret, Matr
 qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
                                         double *g, qpOASES::Matrix *A, double *lb, double *lu, double *lbA, double *luA )
 {
-    printf("postprocessQP_ID not implemented for dense qpOASES.\n");
+    printf("QPLoop not implemented for dense qpOASES\n");
     return qpOASES::SUCCESSFUL_RETURN;
 }
 

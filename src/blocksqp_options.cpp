@@ -29,7 +29,7 @@ SQPoptions::SQPoptions()
     blockHess = 1;
 
     // after too many consecutive skipped updates, Hessian block is reset to (scaled) identity
-    maxConsecSkippedUpdates = 5;
+    maxConsecSkippedUpdates = 100;
 
     // (only for Multiple Shooting OED) second derivative of objective: via standard update (0) or exact (1)
     objSecondDerv = 0;
@@ -111,6 +111,14 @@ void SQPoptions::optionsConsistency()
     if( !hessLimMem )
         hessMemsize = 1;
 
+#ifndef QPSOLVER_QPOASES_SCHUR
+    if( hessUpdate == 1 )
+    {
+        printf( "SR1 update only works with qpOASES Schur complement version. Using BFGS updates instead.\n" );
+        hessUpdate = 2;
+        hessScaling = fallbackScaling;
+    }
+#endif
 
     // Don't do analytical Hessian for standard OC problems
     //if( vars->objLo < -1.0 )

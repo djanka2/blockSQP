@@ -27,9 +27,9 @@ OBJECTS = $(OBJDIR)/blocksqp_general_purpose.o \
 LIBS       = -L $(LIBDIR) -Xlinker -rpath -Xlinker $(LIBDIR) \
              -L $(QPOASESLIBDIR) -Xlinker -rpath -Xlinker $(QPOASESLIBDIR) \
              -L /usr/local/lib -Xlinker -rpath -Xlinker /usr/local/lib \
-             -llapack \
+             -lblockSQP \
              -lqpOASES_aw \
-             -lblockSQP
+             -llapack
 
 OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprecated -Wno-write-strings
 

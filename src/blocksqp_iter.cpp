@@ -45,16 +45,18 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
 
     #ifdef QPSOLVER_DENSE
     constrJac.Dimension( prob->nCon, prob->nVar ).Initialize( 0.0 );
+    hessNz = new double[prob->nVar*prob->nVar];
     #else
+    hessNz = NULL;
+    #endif
+
     jacNz = NULL;
     jacIndCol = NULL;
     jacIndRow = NULL;
-
-    hessNz = NULL;
     hessIndCol = NULL;
     hessIndRow = NULL;
     hessIndLo = NULL;
-    #endif
+    hess = NULL;
 
     if( full )
     {
@@ -133,6 +135,7 @@ void SQPiterate::allocHess()
         varDim = blockIdx[iBlock+1] - blockIdx[iBlock];
         hess[iBlock].Dimension( varDim ).Initialize( 0.0 );
     }
+
 }
 
 
@@ -277,6 +280,27 @@ void SQPiterate::initIterate( SQPoptions* param )
     lambdaStepNorm = 0.0;
 }
 
-///\todo destructor
+SQPiterate::~SQPiterate( void )
+{
+    printf("iterate destructor called!\n");
+    delete[] blockIdx;
+    delete[] noUpdateCounter;
+
+    if( jacNz != NULL )
+        delete[] jacNz;
+    if( jacIndCol != NULL )
+        delete[] jacIndCol;
+    if( jacIndRow != NULL )
+        delete[] jacIndRow;
+
+    if( hessNz != NULL )
+        delete[] hessNz;
+    if( hessIndCol != NULL )
+        delete[] hessIndCol;
+    if( hessIndRow != NULL )
+        delete[] hessIndRow;
+    if( hessIndLo != NULL )
+        delete[] hessIndLo;
+}
 
 } // namespace blockSQP

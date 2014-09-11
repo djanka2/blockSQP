@@ -70,14 +70,9 @@ class Matrix
       /// Matrix that points on <tt>ARRAY</tt>
       Matrix& Arraymatrix( int M, int N, double* ARRAY, int LDIM = -1 );
 
-      //int convert2sparse( int*, int*, int*,
-                          //int**, double**, int**,
-                          //double = 1.0e-12 ) const;
-
       /** Flag == 0: bracket output
         * Flag == 1: Matlab output
-        * else: plain output
-        */
+        * else: plain output */
       const Matrix &Print( FILE* = stdout,   ///< file for output
                              int = 13,         ///< number of digits
                              int = 1           ///< Flag for format
@@ -112,8 +107,6 @@ class SymMatrix : public Matrix
         SymMatrix& Submatrix( const Matrix&, int, int, int = 0, int = 0 );
         SymMatrix& Arraymatrix( int, double* );
         SymMatrix& Arraymatrix( int, int, double*, int = -1 );
-
-//         Matrix &SymMatrix::convert2Matrix( void );
 };
 
 double delta( int, int );

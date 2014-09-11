@@ -322,8 +322,8 @@ int main( int argc, const char* argv[] )
 
     // Clean up
     delete prob;
-    delete meth;
     delete stats;
     delete opts;
+    delete meth;
 }
 

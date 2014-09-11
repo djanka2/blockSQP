@@ -280,7 +280,6 @@ Matrix &Matrix::Arraymatrix( int M, int N, double *ARRAY, int LDIM )
 const Matrix &Matrix::Print( FILE *f, int DIGITS, int flag ) const
 {    int i, j, l;
      double x;
-     //const double eps = 1e-6;
 
      // Flag == 1: Matlab output
      // else: plain output
@@ -293,7 +292,6 @@ const Matrix &Matrix::Print( FILE *f, int DIGITS, int flag ) const
         for ( j = 0; j < n; j++ )
         {
             x = a(i,j);
-            //x = (fabs(x) > eps) ? x : 0.0;
 
             if ( flag == 1 )
             {
@@ -592,12 +590,6 @@ SymMatrix &SymMatrix::Arraymatrix( int M, int N, double *ARRAY, int LDIM )
 }
 
 
-// Matrix &SymMatrix::convert2Matrix( void )
-// {
-//     Error("...to be implemented.");
-// }
-
-
 /* ----------------------------------------------------------------------- */
 /* ----------------------------------------------------------------------- */
 
@@ -607,7 +599,7 @@ double delta( int i, int j )
 }
 
 
-Matrix Transponierte( const Matrix &A )
+Matrix Transpose( const Matrix &A )
 {
     int i, j;
     double *array;
@@ -623,7 +615,7 @@ Matrix Transponierte( const Matrix &A )
 }
 
 
-Matrix &Transponierte( const Matrix &A, Matrix &T )
+Matrix &Transpose( const Matrix &A, Matrix &T )
 {
     int i, j;
 

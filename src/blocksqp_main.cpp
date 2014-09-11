@@ -24,6 +24,15 @@ SQPmethod::SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *st
     initCalled = false;
 }
 
+SQPmethod::~SQPmethod()
+{
+    printf("meth destructor called\n");
+    #ifdef QPSOLVER_QPOASES
+    delete qp;
+    #endif
+    delete vars;
+}
+
 
 int SQPmethod::init()
 {
