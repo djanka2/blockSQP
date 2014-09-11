@@ -47,7 +47,7 @@ int calcEigenvalues( SymMatrix B, Matrix &ev )
     int info, iDummy = 1;
 
     n = B.M();
-    ev.Dimension( n ).Initialisieren( 0.0 );
+    ev.Dimension( n ).Initialize( 0.0 );
     work = new double[3*n];
 
     // copy Matrix, will be overwritten
@@ -141,7 +141,7 @@ void sparseAtimesb( double *Anz, int *AIndRow, int *AIndCol, Matrix b, Matrix &A
  */
 void Atimesb( Matrix A, Matrix b, Matrix &Atimesb )
 {
-    Atimesb.Initialisieren( 0.0 );
+    Atimesb.Initialize( 0.0 );
     for( int i=0; i<A.M(); i++ )
         for( int k=0; k<A.N(); k++ )
             Atimesb( i ) += A( i, k ) * b( k );

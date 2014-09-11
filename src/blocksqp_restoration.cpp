@@ -49,8 +49,8 @@ RestorationProblem::RestorationProblem( Problemspec *parentProblem, Matrix xiRef
     /* Set bounds */
 
     // slack variables greater than zero
-    bl.Dimension( nVar + nCon + 1 ).Initialisieren( 0.0 );
-    bu.Dimension( nVar + nCon + 1 ).Initialisieren( myInf );
+    bl.Dimension( nVar + nCon + 1 ).Initialize( 0.0 );
+    bu.Dimension( nVar + nCon + 1 ).Initialize( myInf );
 
     objLo = 0.0;
     objUp = myInf;
@@ -108,14 +108,14 @@ void RestorationProblem::evaluate( Matrix xi, Matrix lambda,
     SymMatrix *hessDummy;
 
     // The first nVar elements of the variable vector correspond to the variables of the original problem
-    xiOrig.Teilmatrix( xi, parent->nVar, 1, 0, 0 );
-    pSlack.Teilmatrix( xi, parent->nCon, 1, parent->nVar, 0 );
-    nSlack.Teilmatrix( xi, parent->nCon, 1, parent->nVar+parent->nCon, 0 );
+    xiOrig.Submatrix( xi, parent->nVar, 1, 0, 0 );
+    pSlack.Submatrix( xi, parent->nCon, 1, parent->nVar, 0 );
+    nSlack.Submatrix( xi, parent->nCon, 1, parent->nVar+parent->nCon, 0 );
     gradObjOrig.Dimension( parent->nVar );
 
     // The first nCon elements of the constraint vector correspond to the constraints of the original problem
-    constrOrig.Teilmatrix( constr, parent->nCon, 1, 0, 0 );
-    constrJacOrig.Teilmatrix( constrJac, parent->nCon, parent->nVar, 0, 0 );
+    constrOrig.Submatrix( constr, parent->nCon, 1, 0, 0 );
+    constrJacOrig.Submatrix( constrJac, parent->nCon, parent->nVar, 0, 0 );
 
     // Evaluate constraints of the original problem
     parent->evaluate( xiOrig, lambdaDummy,
@@ -179,8 +179,8 @@ void RestorationProblem::evalObjective( Matrix xi, double *objval,
     Matrix xiOrig, slack;
 
     // The first nVar elements of the variable vector correspond to the variables of the original problem
-    xiOrig.Teilmatrix( xi, parent->nVar, 1, 0, 0 );
-    slack.Teilmatrix( xi, 2*parent->nCon, 1, parent->nVar, 0 );
+    xiOrig.Submatrix( xi, parent->nVar, 1, 0, 0 );
+    slack.Submatrix( xi, 2*parent->nCon, 1, parent->nVar, 0 );
 
     *objval = 0.0;
 
@@ -269,8 +269,8 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJ
     int i, iCon, iVar, ieqCnt;
     Matrix xiOrig, pSlack, nSlack, constrJacOrig;
 
-    xiOrig.Teilmatrix( xi, parent->nVar, 1, 0, 0 );
-    constrJacOrig.Teilmatrix( constrJac, parent->nCon, parent->nVar, 0, 0 );
+    xiOrig.Submatrix( xi, parent->nVar, 1, 0, 0 );
+    constrJacOrig.Submatrix( constrJac, parent->nCon, parent->nVar, 0, 0 );
 
     // Call setInitialValues of the parent problem to set up linear constraint matrix correctly
     parent->initialize( xiOrig, lambda, constrJacOrig );
@@ -290,8 +290,8 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJ
         xiOrig( i ) = xiRef( i );
 
     // Initialize slack variables such that the constraints are feasible
-    pSlack.Teilmatrix( xi, parent->nCon, 1, parent->nVar, 0 ).Initialisieren( 0.0 );
-    nSlack.Teilmatrix( xi, parent->nCon, 1, parent->nVar+parent->nCon, 0 ).Initialisieren( 0.0 );
+    pSlack.Submatrix( xi, parent->nCon, 1, parent->nVar, 0 ).Initialize( 0.0 );
+    nSlack.Submatrix( xi, parent->nCon, 1, parent->nVar+parent->nCon, 0 ).Initialize( 0.0 );
     for( i=0; i<parent->nCon; i++ )
     {
         // if lower bound is violated
@@ -302,7 +302,7 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJ
     }
 
     // Set diagonal scaling matrix
-    diagScale.Dimension( parent->nVar ).Initialisieren( 1.0 );
+    diagScale.Dimension( parent->nVar ).Initialize( 1.0 );
     for( i=0; i<parent->nVar; i++ )
         if( fabs( xi( i ) ) > 1.0 )
             diagScale( i ) = 1.0 / fabs( xiRef( i ) );
@@ -311,7 +311,7 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJ
     zeta = 1.0e-3;
     rho = 1.0e3;
 
-    lambda.Initialisieren( 0.0 );
+    lambda.Initialize( 0.0 );
 }
 
 

@@ -29,7 +29,7 @@ SQPoptions::SQPoptions()
     blockHess = 1;
 
     // after too many consecutive skipped updates, Hessian block is reset to (scaled) identity
-    maxConsecSkippedUpdates = 10;
+    maxConsecSkippedUpdates = 5;
 
     // (only for Multiple Shooting OED) second derivative of objective: via standard update (0) or exact (1)
     objSecondDerv = 0;

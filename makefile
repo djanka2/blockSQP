@@ -20,8 +20,7 @@ OBJECTS = $(OBJDIR)/blocksqp_general_purpose.o \
 		$(OBJDIR)/blocksqp_problemspec.o \
 		$(OBJDIR)/blocksqp_qp.o \
 		$(OBJDIR)/blocksqp_restoration.o \
-		$(OBJDIR)/blocksqp_stats.o \
-		$(OBJDIR)/blocksqp_symmatrix.o
+		$(OBJDIR)/blocksqp_stats.o
 
 
 

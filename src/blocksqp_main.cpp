@@ -294,7 +294,7 @@ void SQPmethod::calcLagrangeGradient( Matrix lambda, Matrix gradObj, double *jac
         for( iVar=0; iVar<prob->nVar; iVar++ )
             gradLagrange( iVar ) = gradObj( iVar ) - gradLagrange( iVar );
     else
-        gradLagrange.Initialisieren( 0.0 );
+        gradLagrange.Initialize( 0.0 );
 
     // - lambdaT * constrJac
     for( iVar=0; iVar<prob->nVar; iVar++ )
@@ -327,7 +327,7 @@ void SQPmethod::calcLagrangeGradient( Matrix lambda, Matrix gradObj, Matrix cons
         for( iVar=0; iVar<prob->nVar; iVar++ )
             gradLagrange( iVar ) = gradObj( iVar ) - gradLagrange( iVar );
     else
-        gradLagrange.Initialisieren( 0.0 );
+        gradLagrange.Initialize( 0.0 );
 
     // - lambdaT * constrJac
     for( iVar=0; iVar<prob->nVar; iVar++ )

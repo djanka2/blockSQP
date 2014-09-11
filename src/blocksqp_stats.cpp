@@ -208,7 +208,7 @@ void SQPstats::printHessian( int nBlocks, SymMatrix *hess )
         nVar += hess[iBlock].M();
 
     SymMatrix fullHessian;
-    fullHessian.Dimension( nVar ).Initialisieren( 0.0 );
+    fullHessian.Dimension( nVar ).Initialize( 0.0 );
 
     strcpy( filename, outpath );
     strcat( filename, "hes.m" );
@@ -225,7 +225,7 @@ void SQPstats::printHessian( int nBlocks, SymMatrix *hess )
     }
 
     fprintf( hessFile, "H=" );
-    fullHessian.Ausgabe( hessFile, 23, 1 );
+    fullHessian.Print( hessFile, 23, 1 );
     fprintf( hessFile, "\n" );
     fclose( hessFile );
 }
@@ -261,7 +261,7 @@ void SQPstats::printJacobian( Matrix constrJac )
     jacFile = fopen( filename, "w");
 
     fprintf( jacFile, "A=" );
-    constrJac.Ausgabe( jacFile, 23, 1 );
+    constrJac.Print( jacFile, 23, 1 );
     fprintf( jacFile, "\n" );
 
     fclose( jacFile );
@@ -539,27 +539,27 @@ void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars )
     vecFile = fopen( filename, "w");
 
     fprintf( vecFile, "g=" );
-    vars->gradObj.Ausgabe( vecFile, 23, 1 );
+    vars->gradObj.Print( vecFile, 23, 1 );
     fprintf( vecFile, "\n\n" );
 
-    temp.Teilmatrix( vars->deltaBl, prob->nVar, 1, 0, 0 );
+    temp.Submatrix( vars->deltaBl, prob->nVar, 1, 0, 0 );
     fprintf( vecFile, "lb=" );
-    temp.Ausgabe( vecFile, 23, 1 );
+    temp.Print( vecFile, 23, 1 );
     fprintf( vecFile, "\n\n" );
 
-    temp.Teilmatrix( vars->deltaBu, prob->nVar, 1, 0, 0 );
+    temp.Submatrix( vars->deltaBu, prob->nVar, 1, 0, 0 );
     fprintf( vecFile, "lu=" );
-    temp.Ausgabe( vecFile, 23, 1 );
+    temp.Print( vecFile, 23, 1 );
     fprintf( vecFile, "\n\n" );
 
-    temp.Teilmatrix( vars->deltaBl, prob->nCon, 1, prob->nVar, 0 );
+    temp.Submatrix( vars->deltaBl, prob->nCon, 1, prob->nVar, 0 );
     fprintf( vecFile, "lbA=" );
-    temp.Ausgabe( vecFile, 23, 1 );
+    temp.Print( vecFile, 23, 1 );
     fprintf( vecFile, "\n\n" );
 
-    temp.Teilmatrix( vars->deltaBu, prob->nCon, 1, prob->nVar, 0 );
+    temp.Submatrix( vars->deltaBu, prob->nCon, 1, prob->nVar, 0 );
     fprintf( vecFile, "luA=" );
-    temp.Ausgabe( vecFile, 23, 1 );
+    temp.Print( vecFile, 23, 1 );
     fprintf( vecFile, "\n" );
 
     fclose( vecFile );
@@ -604,7 +604,7 @@ void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars )
     //for( iExOpt=0; iExOpt<prob->nExOpt; iExOpt++ )
         //for( iShoot=0; iShoot<prob->expEval[iExOpt]->nShoot-1; iShoot++ )
             //dimF1 += prob->expEval[iExOpt]->measContrib[iShoot].M();
-    //prob->refF1.Dimension( dimF1 ).Initialisieren( 0.0 );
+    //prob->refF1.Dimension( dimF1 ).Initialize( 0.0 );
 
     //count = 0;
     //for( iExOpt=0; iExOpt<prob->nExOpt; iExOpt++ )

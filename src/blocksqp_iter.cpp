@@ -44,7 +44,7 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
     allocMin( prob );
 
     #ifdef QPSOLVER_DENSE
-    constrJac.Dimension( prob->nCon, prob->nVar ).Initialisieren( 0.0 );
+    constrJac.Dimension( prob->nCon, prob->nVar ).Initialize( 0.0 );
     #else
     jacNz = NULL;
     jacIndCol = NULL;
@@ -105,20 +105,20 @@ SQPiterate::SQPiterate( SQPiterate *iter )
 void SQPiterate::allocMin( Problemspec *prob )
 {
     // current iterate
-    xi.Dimension( prob->nVar ).Initialisieren( 0.0 );
+    xi.Dimension( prob->nVar ).Initialize( 0.0 );
 
     // dual variables (for general constraints and variable bounds)
-    lambda.Dimension( prob->nVar + prob->nCon ).Initialisieren( 0.0 );
+    lambda.Dimension( prob->nVar + prob->nCon ).Initialize( 0.0 );
 
     // constraint vector with lower and upper bounds
     // (Box constraints are not included in the constraint list)
-    constr.Dimension( prob->nCon ).Initialisieren( 0.0 );
+    constr.Dimension( prob->nCon ).Initialize( 0.0 );
 
     // gradient of objective
-    gradObj.Dimension( prob->nVar ).Initialisieren( 0.0 );
+    gradObj.Dimension( prob->nVar ).Initialize( 0.0 );
 
     // gradient of Lagrangian
-    gradLagrange.Dimension( prob->nVar ).Initialisieren( 0.0 );
+    gradLagrange.Dimension( prob->nVar ).Initialize( 0.0 );
 }
 
 
@@ -131,7 +131,7 @@ void SQPiterate::allocHess()
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
     {
         varDim = blockIdx[iBlock+1] - blockIdx[iBlock];
-        hess[iBlock].Dimension( varDim ).Initialisieren( 0.0 );
+        hess[iBlock].Dimension( varDim ).Initialize( 0.0 );
     }
 }
 
@@ -217,46 +217,46 @@ void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
     int nCon = prob->nCon;
 
     // current step
-    deltaMat.Dimension( nVar, param->hessMemsize, nVar ).Initialisieren( 0.0 );
-    deltaXi.Teilmatrix( deltaMat, nVar, 1, 0, 0 );
+    deltaMat.Dimension( nVar, param->hessMemsize, nVar ).Initialize( 0.0 );
+    deltaXi.Submatrix( deltaMat, nVar, 1, 0, 0 );
     // trial step (temporary variable, for line search)
-    trialXi.Dimension( nVar, 1, nVar ).Initialisieren( 0.0 );
+    trialXi.Dimension( nVar, 1, nVar ).Initialize( 0.0 );
 
     // bounds for step (QP subproblem)
-    deltaBl.Dimension( nVar+nCon ).Initialisieren( 0.0 );
-    deltaBu.Dimension( nVar+nCon ).Initialisieren( 0.0 );
+    deltaBl.Dimension( nVar+nCon ).Initialize( 0.0 );
+    deltaBu.Dimension( nVar+nCon ).Initialize( 0.0 );
 
     // product of constraint Jacobian with step (deltaXi)
-    AdeltaXi.Dimension( nCon ).Initialisieren( 0.0 );
+    AdeltaXi.Dimension( nCon ).Initialize( 0.0 );
 
     // state of each variable (for QP solver)
     istate = new int[nVar+nCon];
     for( i=0; i<nVar+nCon; i++ ) istate[i] = 0;
 
     // dual variables of QP (simple bounds and general constraints)
-    lambdaQP.Dimension( nVar+nCon ).Initialisieren( 0.0 );
+    lambdaQP.Dimension( nVar+nCon ).Initialize( 0.0 );
 
     // line search parameters
-    deltaH.Dimension( nBlocks ).Initialisieren( 0.0 );
+    deltaH.Dimension( nBlocks ).Initialize( 0.0 );
 
     // filter as a set of pairs
     filter = new std::set< std::pair<double,double> >;
 
     // difference of Lagrangian gradients
-    gammaMat.Dimension( nVar, param->hessMemsize, nVar ).Initialisieren( 0.0 );
-    gamma.Teilmatrix( gammaMat, nVar, 1, 0, 0 );
+    gammaMat.Dimension( nVar, param->hessMemsize, nVar ).Initialize( 0.0 );
+    gamma.Submatrix( gammaMat, nVar, 1, 0, 0 );
 
     // Scalars that are used in various Hessian update procedures
-    deltaNorm.Dimension( nBlocks ).Initialisieren( 1.0 );
-    deltaGamma.Dimension( nBlocks ).Initialisieren( 0.0 );
-    deltaBdelta.Dimension( nBlocks ).Initialisieren( 0.0 );
+    deltaNorm.Dimension( nBlocks ).Initialize( 1.0 );
+    deltaGamma.Dimension( nBlocks ).Initialize( 0.0 );
+    deltaBdelta.Dimension( nBlocks ).Initialize( 0.0 );
     noUpdateCounter = new int[nBlocks];
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
         noUpdateCounter[iBlock] = -1;
 
     // For modified BFGS Updates: for each block save delta^T delta and gamma^T delta
-    deltaNormOld.Dimension( nBlocks ).Initialisieren( 1.0 );
-    deltaGammaOld.Dimension( nBlocks ).Initialisieren( 0.0 );
+    deltaNormOld.Dimension( nBlocks ).Initialize( 1.0 );
+    deltaGammaOld.Dimension( nBlocks ).Initialize( 0.0 );
 
     updateSequence = new int[param->hessMemsize];
     for( i=0; i<param->hessMemsize; i++ ) updateSequence[i] = 1;

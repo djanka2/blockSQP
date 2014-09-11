@@ -264,8 +264,8 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
     // vars->constrJac, vars->AdeltaXi and vars->gradObj are unchanged so far.
 
     // First SOC step
-    deltaXiSOC.Dimension( vars->deltaXi.M() ).Initialisieren( 0.0 );
-    lambdaQPSOC.Dimension( vars->lambdaQP.M() ).Initialisieren( 0.0 );
+    deltaXiSOC.Dimension( vars->deltaXi.M() ).Initialize( 0.0 );
+    lambdaQPSOC.Dimension( vars->lambdaQP.M() ).Initialize( 0.0 );
 
     // Update bounds for SOC QP
     updateStepBounds( 1 );
@@ -505,8 +505,8 @@ int SQPmethod::feasibilityRestorationHeuristic()
     vars->reducedStepCount = 0;
 
     // Reset lambda
-    vars->lambda.Initialisieren( 0.0 );
-    vars->lambdaQP.Initialisieren( 0.0 );
+    vars->lambda.Initialize( 0.0 );
+    vars->lambdaQP.Initialize( 0.0 );
 
     // Compute the "step" taken by closing the continuity conditions
     /// \note deltaXi is reset by resetHessian(), so this doesn't matter
@@ -538,7 +538,7 @@ int SQPmethod::kktErrorReduction( )
         vars->trialXi( i ) = vars->xi( i ) + vars->deltaXi( i );
 
     // Compute objective and ||constr(trialXi)|| at trial point
-    trialConstr.Dimension( prob->nCon ).Initialisieren( 0.0 );
+    trialConstr.Dimension( prob->nCon ).Initialize( 0.0 );
     prob->evaluate( vars->trialXi, &objTrial, trialConstr, &info );
     cNormTrial = lInfConstraintNorm( vars->trialXi, trialConstr, prob->bu, prob->bl );
     if( info != 0 || objTrial < prob->objLo || objTrial > prob->objUp || !(objTrial == objTrial) || !(cNormTrial == cNormTrial) )
@@ -550,7 +550,7 @@ int SQPmethod::kktErrorReduction( )
     // Compute KKT error of the new point
 
     // scaled norm of Lagrangian gradient
-    trialGradLagrange.Dimension( prob->nVar ).Initialisieren( 0.0 );
+    trialGradLagrange.Dimension( prob->nVar ).Initialize( 0.0 );
     #ifdef QPSOLVER_SPARSE
     calcLagrangeGradient( vars->lambdaQP, vars->gradObj, vars->jacNz, vars->jacIndRow, vars->jacIndCol, trialGradLagrange, 0 );
     #else

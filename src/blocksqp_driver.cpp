@@ -100,7 +100,7 @@ void MyProblem::convertJacobian( Matrix constrJac, double *&jacNz, int *&jacIndR
 void MyProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac )
 {
     // set initial values for xi and lambda
-    lambda.Initialisieren( 0.0 );
+    lambda.Initialize( 0.0 );
     for( int i=0; i<nVar; i++ )
         xi( i ) = xi0( i );
 }
@@ -116,14 +116,14 @@ void MyProblem::initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&ja
     int info;
 
     // set initial values for xi and lambda
-    lambda.Initialisieren( 0.0 );
+    lambda.Initialize( 0.0 );
     for( int i=0; i<nVar; i++ )
         xi( i ) = xi0( i );
 
     // find out Jacobian sparsity pattern
-    constrDummy.Dimension( nCon ).Initialisieren( 0.0 );
-    gradObjDummy.Dimension( nVar ).Initialisieren( 0.0 );
-    constrJac.Dimension( nCon, nVar ).Initialisieren( myInf );
+    constrDummy.Dimension( nCon ).Initialize( 0.0 );
+    gradObjDummy.Dimension( nVar ).Initialize( 0.0 );
+    constrJac.Dimension( nCon, nVar ).Initialize( myInf );
     evaluate( xi, lambda, &objvalDummy, constrDummy, gradObjDummy, constrJac, hessDummy, 1, &info );
 
     // allocate sparse Jacobian structures
@@ -161,8 +161,8 @@ MyProblem::MyProblem( int nVar_, int nCon_, int nBlocks_, int *blockIdx_, Matrix
             blockIdx[i] = blockIdx_[i];
     }
 
-    bl.Dimension( nVar + nCon ).Initialisieren( -myInf );
-    bu.Dimension( nVar + nCon ).Initialisieren( myInf );
+    bl.Dimension( nVar + nCon ).Initialize( -myInf );
+    bu.Dimension( nVar + nCon ).Initialize( myInf );
 
     for( int i=0; i<nVar+nCon; i++ )
     {
@@ -192,7 +192,7 @@ void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &cons
 {
     Matrix constrJac;
 
-    constrJac.Dimension( nCon, nVar ).Initialisieren( myInf );
+    constrJac.Dimension( nCon, nVar ).Initialize( myInf );
     evaluate( xi, lambda, objval, constr, gradObj, constrJac, hess, dmode, info );
 
     // Convert to sparse format
@@ -256,8 +256,8 @@ int main( int argc, const char* argv[] )
 
     // Variable bounds
     Matrix bl, bu;
-    bl.Dimension( nVar+nCon ).Initialisieren( -myInf );
-    bu.Dimension( nVar+nCon ).Initialisieren( myInf );
+    bl.Dimension( nVar+nCon ).Initialize( -myInf );
+    bu.Dimension( nVar+nCon ).Initialize( myInf );
 
     // Constraint bounds
     bl( nVar ) = bu( nVar ) = 0.0;
@@ -313,12 +313,12 @@ int main( int argc, const char* argv[] )
         printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");
 
     printf("\nPrimal solution:\n");
-    meth->vars->xi.Ausgabe();
+    meth->vars->xi.Print();
     printf("\nDual solution:\n");
-    meth->vars->lambda.Ausgabe();
+    meth->vars->lambda.Print();
     printf("\nHessian approximation at the solution:\n");
     for( int i=0; i<meth->vars->nBlocks; i++ )
-        meth->vars->hess[i].Ausgabe();
+        meth->vars->hess[i].Print();
 
     // Clean up
     delete prob;

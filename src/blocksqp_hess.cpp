@@ -23,7 +23,7 @@ void SQPmethod::calcInitialHessian()
  */
 void SQPmethod::calcInitialHessian( int iBlock )
 {
-    vars->hess[iBlock].Initialisieren( 0.0 );
+    vars->hess[iBlock].Initialize( 0.0 );
 
     // Each block is a diagonal matrix
     for( int i=0; i<vars->hess[iBlock].M(); i++ )
@@ -47,14 +47,14 @@ void SQPmethod::resetHessian( int iBlock )
 
     // smallGamma and smallDelta are either subvectors of gamma and delta
     // or submatrices of gammaMat, deltaMat, i.e. subvectors of gamma and delta from m prev. iterations (for L-BFGS)
-    smallGamma.Teilmatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
-    smallDelta.Teilmatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
+    smallGamma.Submatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
+    smallDelta.Submatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
 
     // Remove past information on Lagrangian gradient difference
-    smallGamma.Initialisieren( 0.0 );
+    smallGamma.Initialize( 0.0 );
 
     // Remove past information on steps
-    smallDelta.Initialisieren( 0.0 );
+    smallDelta.Initialize( 0.0 );
 
     // Remove information on old scalars (used for COL sizing)
     vars->deltaNormOld( iBlock ) = 1.0;
@@ -85,7 +85,7 @@ int SQPmethod::calcFiniteDiffHessian()
     {
         offset = vars->blockIdx[iBlock];
         nVarBlock = vars->blockIdx[iBlock+1] - vars->blockIdx[iBlock];
-        vars->hess[iBlock].Initialisieren( 0.0 );
+        vars->hess[iBlock].Initialize( 0.0 );
         for( iVar=vars->blockIdx[iBlock]; iVar<vars->blockIdx[iBlock+1]; iVar++ )
         {
             vars->xi( iVar ) += DELTA;
@@ -267,8 +267,8 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
 
         // smallGamma and smallDelta are either subvectors of gamma and delta
         // or submatrices of gammaMat, deltaMat, i.e. subvectors of gamma and delta from m prev. iterations (for L-BFGS)
-        smallGamma.Teilmatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
-        smallDelta.Teilmatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
+        smallGamma.Submatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
+        smallDelta.Submatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
 
         // Compute delta^T delta, delta^T gamma, delta^T B delta
         updateScalars( smallGamma, smallDelta, iBlock );
@@ -321,13 +321,13 @@ int SQPmethod::sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock )
     }
 
     // Construct \tilde W and D**(-1)
-    W.Dimension( m, m ).Initialisieren( 0.0 );
-    Dinv.Dimension( m ).Initialisieren( 0.0 );
+    W.Dimension( m, m ).Initialize( 0.0 );
+    Dinv.Dimension( m ).Initialize( 0.0 );
     for( i=0; i<m; i++ )
     {
         // D**(-1) = diag( 1/deltaTdelta_i )
         posDelta = (posOldest+i) % m;
-        deltai.Teilmatrix( deltaMat, nVar, 1, 0, posDelta );
+        deltai.Submatrix( deltaMat, nVar, 1, 0, posDelta );
         for( k=0; k<nVar; k++ )
             Dinv( i ) += deltai( k ) * deltai( k );
         Dinv( i ) = sqrt( Dinv( i ) );
@@ -345,7 +345,7 @@ int SQPmethod::sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock )
         for( j=i; j<m; j++ )
         {
             posGamma = (posOldest+j) % m;
-            gammai.Teilmatrix( gammaMat, nVar, 1, 0, posGamma );
+            gammai.Submatrix( gammaMat, nVar, 1, 0, posGamma );
 
             for( k=0; k<nVar; k++ )
                 W( j, i ) += gammai( k ) * deltai( k );
@@ -383,11 +383,11 @@ int SQPmethod::sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock )
     if( minEv > 0.0 )
     {
         Matrix G, Q, NCD, NCDG, gammaT;
-        G.Dimension( m, nVar ).Initialisieren( 0.0 );
-        Q.Dimension( m, m ).Initialisieren( 0.0 );
-        NCD.Dimension( m, m ).Initialisieren( 0.0 );
-        NCDG.Dimension( m, m ).Initialisieren( 0.0 );
-        gammaT.Dimension( m, nVar ).Initialisieren( 0.0 );
+        G.Dimension( m, nVar ).Initialize( 0.0 );
+        Q.Dimension( m, m ).Initialize( 0.0 );
+        NCD.Dimension( m, m ).Initialize( 0.0 );
+        NCDG.Dimension( m, m ).Initialize( 0.0 );
+        gammaT.Dimension( m, nVar ).Initialize( 0.0 );
 
         // gammaT = gammaMat**T (reorder columns!)
         for( i=0; i<m; i++ )
@@ -423,7 +423,7 @@ int SQPmethod::sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock )
                     Q( i, j ) += G( i, k ) * G( j, k );
 
         Matrix ev;
-        ev.Dimension( m ).Initialisieren( 0.0 );
+        ev.Dimension( m ).Initialize( 0.0 );
         ldim = Q.LDIM();
         dsyev_( "N", "L", &m, Q.ARRAY(), &ldim,
                ev.ARRAY(), work, &lwork, &info, strlen("N"), strlen("L") );
@@ -476,8 +476,8 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
 
         // smallGamma and smallDelta are either subvectors of gamma and delta
         // or submatrices of gammaMat, deltaMat, i.e. subvectors of gamma and delta from m prev. iterations (for L-BFGS)
-        smallGamma.Teilmatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
-        smallDelta.Teilmatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
+        smallGamma.Submatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
+        smallDelta.Submatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
 
         // Memory structure
         if( stats->itCount > smallGamma.N() )
@@ -509,8 +509,8 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
             pos = (posOldest+i) % m;
 
             // Get new vector from list
-            gammai.Teilmatrix( smallGamma, nVarLocal, 1, 0, pos );
-            deltai.Teilmatrix( smallDelta, nVarLocal, 1, 0, pos );
+            gammai.Submatrix( smallGamma, nVarLocal, 1, 0, pos );
+            deltai.Submatrix( smallDelta, nVarLocal, 1, 0, pos );
 
             // Compute delta^T delta, delta^T gamma, and delta^T B delta
             updateScalars( gammai, deltai, iBlock );
@@ -592,7 +592,7 @@ void SQPmethod::calcBFGS( Matrix gamma, Matrix delta, int iBlock )
     // Bdelta = B*delta (if sizing is enabled, B is the sized B!)
     // h1 = delta^T * B * delta
     // h2 = delta^T * gamma
-    Bdelta.Dimension( dim ).Initialisieren( 0.0 );
+    Bdelta.Dimension( dim ).Initialize( 0.0 );
     for( i=0; i<dim; i++ )
     {
         for( k=0; k<dim; k++ )
@@ -704,8 +704,8 @@ void SQPmethod::updateDeltaGamma()
     if( m == 1 )
         return;
 
-    vars->deltaXi.Teilmatrix( vars->deltaMat, nVar, 1, 0, stats->itCount % m );
-    vars->gamma.Teilmatrix( vars->gammaMat, nVar, 1, 0, stats->itCount % m );
+    vars->deltaXi.Submatrix( vars->deltaMat, nVar, 1, 0, stats->itCount % m );
+    vars->gamma.Submatrix( vars->gammaMat, nVar, 1, 0, stats->itCount % m );
 }
 
 } // namespace blockSQP

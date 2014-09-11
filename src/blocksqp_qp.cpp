@@ -384,7 +384,7 @@ qpOASES::returnValue SQPmethod::postprocessQP_Id( qpOASES::returnValue ret, Matr
     ///* Compute (possible) regularization paramter to convexify QP */
     //if( strategy == 1 )
     //{// Estimate the smallest eigenvalue and use a fraction of this estimate to convexify
-        //deltaH.Initialisieren( 0.0 );
+        //deltaH.Initialize( 0.0 );
         //for( iBlock=0; iBlock<vars->nBlocks; iBlock++ )
             //deltaH( iBlock ) = -estimateSmallestEigenvalue( vars->hess[iBlock] ) / maxQP;
     //}
