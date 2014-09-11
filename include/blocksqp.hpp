@@ -40,8 +40,7 @@ class SQPoptions
         int fallbackUpdate;                 ///< If indefinite update is used, the type of fallback strategy
         int hessLimMem;                     ///< Full or limited memory
         int hessMemsize;                    ///< Memory size for L-BFGS updates
-        bool objSecondDerv;                 ///< Second derivative of objective is given by evalObjective routine
-        bool conSecondDerv;                 ///< Second derivative of constraints is given by evalConstraints routine
+        int whichSecondDerv;                ///< For which block should second derivatives be provided by the user
         bool skipFirstGlobalization;        ///< If set to true, no globalization strategy in first iteration is applied
 
         /* Filter line search parameters */

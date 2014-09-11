@@ -31,11 +31,9 @@ SQPoptions::SQPoptions()
     // after too many consecutive skipped updates, Hessian block is reset to (scaled) identity
     maxConsecSkippedUpdates = 100;
 
-    // (only for Multiple Shooting OED) second derivative of objective: via standard update (0) or exact (1)
-    objSecondDerv = 0;
-
-    // only for simplified Multiple Shooting OED: second derivative of constraints to form exact Hessian
-    conSecondDerv = 0;
+    // for which blocks should second derivatives be provided by the user:
+    // 0: none, 1: for the last block, 2: for all blocks
+    whichSecondDerv = 0;
 
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: geometric mean of 1 and 2
@@ -101,7 +99,7 @@ SQPoptions::SQPoptions()
 void SQPoptions::optionsConsistency()
 {
     // If we compute second constraints derivatives switch to finite differences Hessian (convenience)
-    if( conSecondDerv )
+    if( whichSecondDerv == 2 )
     {
         hessUpdate = 4;
         blockHess = 1;

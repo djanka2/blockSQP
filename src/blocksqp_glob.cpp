@@ -371,8 +371,7 @@ int SQPmethod::feasibilityRestorationPhase()
 
     // Set options for the SQP method for this problem
     restOpts->globalization = 1;
-    restOpts->objSecondDerv = false;
-    restOpts->conSecondDerv = false;
+    restOpts->whichSecondDerv = 0;
     restOpts->restoreFeas = 0;
     restOpts->hessUpdate = 2;
     restOpts->hessLimMem = 0;

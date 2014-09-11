@@ -13,7 +13,7 @@ void SQPmethod::calcInitialHessian()
 
     for( iBlock=0; iBlock<vars->nBlocks; iBlock++ )
         //if objective derv is computed exactly, don't set the last block!
-        if( !(param->objSecondDerv && param->blockHess && iBlock == vars->nBlocks - 1) )
+        if( !(param->whichSecondDerv == 1 && param->blockHess && iBlock == vars->nBlocks-1) )
             calcInitialHessian( iBlock );
 }
 
@@ -35,7 +35,7 @@ void SQPmethod::resetHessian()
 {
     for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
         //if objective derv is computed exactly, don't set the last block!
-        if( !(param->objSecondDerv && param->blockHess && iBlock == vars->nBlocks - 1) )
+        if( !(param->whichSecondDerv == 1 && param->blockHess && iBlock == vars->nBlocks - 1) )
             resetHessian( iBlock );
 }
 
@@ -252,7 +252,7 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
     bool firstIter;
 
     //if objective derv is computed exactly, don't set the last block!
-    if( param->objSecondDerv && param->blockHess )
+    if( param->whichSecondDerv == 1 && param->blockHess )
         nBlocks = vars->nBlocks - 1;
     else
         nBlocks = vars->nBlocks;
@@ -460,7 +460,7 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
     double averageSizingFactor;
 
     //if objective derv is computed exactly, don't set the last block!
-    if( param->objSecondDerv && param->blockHess )
+    if( param->whichSecondDerv == 1 && param->blockHess )
         nBlocks = vars->nBlocks - 1;
     else
         nBlocks = vars->nBlocks;

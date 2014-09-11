@@ -1,13 +1,3 @@
-/***************************************************************************
-   VPLAN Source Code
-   Version: $Id$
-   Author: Stefan Koerkel and JRG ExpDesign
- ***************************************************************************/
-
-/**
- * \file matrix.cc
- */
-
 /* Matrix-Datentyp */
 /* von Stefan Koerkel 1993-98 */
 

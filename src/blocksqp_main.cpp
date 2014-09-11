@@ -26,7 +26,6 @@ SQPmethod::SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *st
 
 SQPmethod::~SQPmethod()
 {
-    printf("meth destructor called\n");
     #ifdef QPSOLVER_QPOASES
     delete qp;
     #endif
@@ -66,7 +65,7 @@ int SQPmethod::run( int maxIt, int warmStart )
     int it, infoQP = 0, infoEval = 0, infoHess = 0;
     bool skipLineSearch = false;
     bool hasConverged = false;
-    int whichDerv = param->conSecondDerv + param->objSecondDerv;
+    int whichDerv = param->whichSecondDerv;
 
     if( !initCalled )
     {
@@ -144,7 +143,7 @@ int SQPmethod::run( int maxIt, int warmStart )
             }
 
             // Invoke feasibility restoration phase
-            if( qpError && vars->steptype < 3 )
+            if( qpError && vars->steptype < 3 && param->restoreFeas )
             {
                 printf("***Start feasibility restoration phase.***\n");
                 vars->steptype = 3;
@@ -154,7 +153,7 @@ int SQPmethod::run( int maxIt, int warmStart )
             // If everything failed, abort.
             if( qpError )
             {
-                printf( "***Feasibility restoration phase failed. Stop.***\n" );
+                printf( "***QP error. Stop.***\n" );
                 return -1;
             }
         }
@@ -210,7 +209,7 @@ int SQPmethod::run( int maxIt, int warmStart )
                 }
 
                 // If this does not yield a successful step, start restoration phase
-                if( lsError && vars->cNorm > 0.01 * param->nlinfeastol )
+                if( lsError && vars->cNorm > 0.01 * param->nlinfeastol && param->restoreFeas )
                 {
                     printf("***Warning! Steplength too short. Start feasibility restoration phase.***\n");
                     vars->steptype = 3;

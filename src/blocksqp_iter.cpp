@@ -15,7 +15,7 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
         blockIdx[0] = 0;
         blockIdx[1] = prob->nVar;
         maxblocksize = prob->nVar;
-        param->objSecondDerv = 0;
+        param->whichSecondDerv = 0;
     }
     else if( param->blockHess == 2 && prob->nBlocks > 1 )
     {// hybrid strategy: 1 block for constraints, 1 for objective
@@ -282,25 +282,18 @@ void SQPiterate::initIterate( SQPoptions* param )
 
 SQPiterate::~SQPiterate( void )
 {
-    printf("iterate destructor called!\n");
     delete[] blockIdx;
     delete[] noUpdateCounter;
 
     if( jacNz != NULL )
         delete[] jacNz;
-    if( jacIndCol != NULL )
-        delete[] jacIndCol;
     if( jacIndRow != NULL )
         delete[] jacIndRow;
 
     if( hessNz != NULL )
         delete[] hessNz;
-    if( hessIndCol != NULL )
-        delete[] hessIndCol;
     if( hessIndRow != NULL )
         delete[] hessIndRow;
-    if( hessIndLo != NULL )
-        delete[] hessIndLo;
 }
 
 } // namespace blockSQP
