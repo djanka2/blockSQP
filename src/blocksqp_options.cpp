@@ -9,7 +9,8 @@ namespace blockSQP
  */
 SQPoptions::SQPoptions()
 {
-    eps = 2.2204e-16;
+    //eps = 2.2204e-16;
+    eps = 1.0e-15;
     inf = 1.0e20;
     opttol = 1.0e-5;
     nlinfeastol = 1.0e-5;

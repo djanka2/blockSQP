@@ -477,6 +477,8 @@ int SQPmethod::feasibilityRestorationHeuristic()
 
     // Call problem specific heuristic to reduce constraint violation.
     // For shooting methods that means setting consistent values for shooting nodes by one forward integration.
+    for( k=0; k<prob->nVar; k++ ) // input: last successful step 
+        vars->trialXi( k ) = vars->xi( k );
     prob->reduceConstrVio( vars->trialXi, &info );
     if( info )// If an error occured in restoration heuristics, abort
         return -1;
