@@ -230,9 +230,11 @@ double SQPmethod::sizingFactor( double theta, int iBlock )
     double scale;
     double myEps = 1.0e2 * param->eps;
 
-    if( vars->deltaNorm(iBlock) > myEps && vars->deltaNormOld(iBlock) > myEps )
-        scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaGamma(iBlock) / vars->deltaNorm(iBlock) ) /
-                ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaBdelta(iBlock) / vars->deltaNorm(iBlock) );
+    if( vars->deltaNorm(iBlock) > myEps && vars->deltaNormOld(iBlock) > myEps ) 
+        scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaGamma(iBlock) / vars->deltaNorm(iBlock) ) / 
+            ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaBdelta(iBlock) / vars->deltaNorm(iBlock) );
+        //if( (scale = (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaBdelta(iBlock) / vars->deltaNorm(iBlock)) > myEps )
+            //scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaGamma(iBlock) / vars->deltaNorm(iBlock) ) / scale;
     else
         scale = 1.0;
 
