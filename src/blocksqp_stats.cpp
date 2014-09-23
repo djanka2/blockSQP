@@ -176,7 +176,7 @@ void SQPstats::initStats()
 /**
  * Print primal variables to a MATLAB file
  */
-void SQPstats::printPrimalVars( Matrix xi )
+void SQPstats::printPrimalVars( const Matrix &xi )
 {
     for( int i=0; i<xi.M()-1; i++ )
         fprintf( primalVarsFile, " %23.16e,", xi( i ) );
@@ -187,7 +187,7 @@ void SQPstats::printPrimalVars( Matrix xi )
 /**
  * Print primal variables to a MATLAB file
  */
-void SQPstats::printDualVars( Matrix lambda )
+void SQPstats::printDualVars( const Matrix &lambda )
 {
     for( int i=0; i<lambda.M()-1; i++ )
         fprintf( dualVarsFile, " %23.16e,", lambda( i ) );
@@ -198,7 +198,7 @@ void SQPstats::printDualVars( Matrix lambda )
 /**
  * Print dense Hessian in a MATLAB file
  */
-void SQPstats::printHessian( int nBlocks, SymMatrix *hess )
+void SQPstats::printHessian( int nBlocks, const SymMatrix *&hess )
 {
     PATHSTR filename;
     int offset, i, j, iBlock, nVar;
@@ -252,7 +252,7 @@ void SQPstats::printHessian( int nVar, double *hesNz, int *hesIndRow, int *hesIn
 /**
  * Print dense Jacobian in a MATLAB file
  */
-void SQPstats::printJacobian( Matrix constrJac )
+void SQPstats::printJacobian( const Matrix &constrJac )
 {
     PATHSTR filename;
 

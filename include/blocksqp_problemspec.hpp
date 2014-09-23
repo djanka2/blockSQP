@@ -53,19 +53,19 @@ class Problemspec
         virtual void initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol ) = 0;
 
         /// Evaluate all problem functions and their derivatives (dense version)
-        virtual void evaluate( Matrix xi, Matrix lambda,
+        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
                                double *objval, Matrix &constr,
                                Matrix &gradObj, Matrix &constrJac,
                                SymMatrix *&hess, int dmode, int *info ) = 0;
 
         /// Evaluate all problem functions and their derivatives (sparse version)
-        virtual void evaluate( Matrix xi, Matrix lambda,
+        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
                                double *objval, Matrix &constr,
                                Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
                                SymMatrix *&hess, int dmode, int *info ) = 0;
 
         /// Short cut if no derivatives are needed
-        virtual void evaluate( Matrix xi, double *objval, Matrix &constr, int *info );
+        virtual void evaluate( const Matrix &xi, double *objval, Matrix &constr, int *info );
 
         /*
          * Optional Methods
@@ -75,8 +75,8 @@ class Problemspec
 
         /// Print information about the current problem
         virtual void printInfo(){};
-        virtual void printVariables( Matrix xi, Matrix lambda, int verbose ){};
-        virtual void printConstraints( Matrix constr, Matrix lambda ){};
+        virtual void printVariables( const Matrix &xi, const Matrix &lambda, int verbose ){};
+        virtual void printConstraints( const Matrix &constr, const Matrix &lambda ){};
 };
 
 
@@ -103,7 +103,7 @@ class RestorationProblem : public Problemspec
      * METHODS
      */
     public:
-        RestorationProblem( Problemspec *parent, Matrix xiReference, Matrix constrReference );
+        RestorationProblem( Problemspec *parent, const Matrix &xiReference, const Matrix &constrReference );
 
         /// Set initial values for xi and lambda, may also set matrix for linear constraints (dense version)
         virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac );
@@ -112,27 +112,27 @@ class RestorationProblem : public Problemspec
         virtual void initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol );
 
         /// Evaluate all problem functions and their derivatives (dense version)
-        virtual void evaluate( Matrix xi, Matrix lambda,
+        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
                                double *objval, Matrix &constr,
                                Matrix &gradObj, Matrix &constrJac,
                                SymMatrix *&hess, int dmode, int *info );
 
         /// Evaluate all problem functions and their derivatives (sparse version)
-        virtual void evaluate( Matrix xi, Matrix lambda,
+        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
                                double *objval, Matrix &constr,
                                Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
                                SymMatrix *&hess, int dmode, int *info );
 
-        virtual void convertJacobian( Matrix constrJac, double *&jacNz, int *&jacIndRow,
+        virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow,
                                       int *&jacIndCol, bool firstCall = 0 );
 
-        virtual void evalObjective( Matrix xi, double *objval,
+        virtual void evalObjective( const Matrix &xi, double *objval,
                                     Matrix &gradObj, SymMatrix *&hess,
                                     int dmode, int *info );
 
         virtual void printInfo();
-        virtual void printVariables( Matrix xi, Matrix lambda, int verbose );
-        virtual void printConstraints( Matrix constr, Matrix lambda );
+        virtual void printVariables( const Matrix &xi, const Matrix &lambda, int verbose );
+        virtual void printConstraints( const Matrix &constr, const Matrix &lambda );
 };
 
 } // namespace blockSQP

@@ -201,9 +201,9 @@ class SQPstats
         /// Print Debug information in logfiles
         void printDebug( Problemspec *prob, SQPiterate *vars );
         /// Print current iterate of primal variables to file
-        void printPrimalVars( Matrix xi );
+        void printPrimalVars( const Matrix &xi );
         /// Print current iterate of dual variables to file
-        void printDualVars( Matrix lambda );
+        void printDualVars( const Matrix &lambda );
         /// Print all QP data to files to be read in MATLAB
         void dumpQPMatlab( Problemspec *prob, SQPiterate *vars );
 #ifdef QPSOLVER_QPOASES
@@ -213,10 +213,10 @@ class SQPstats
         void printVectorCpp( FILE *outfile, int *vec, int len, NAMESTR varname );
         void printCppNull( FILE *outfile, NAMESTR varname );
         /// Print current (full) Jacobian to Matlab file
-        void printJacobian( Matrix constrJacFull );
+        void printJacobian( const Matrix &constrJacFull );
         void printJacobian( int nCon, int nVar, double *jacNz, int *jacIndRow, int *jacIndCol );
         /// Print current (full) Hessian to Matlab file
-        void printHessian( int nBlocks, SymMatrix *hess );
+        void printHessian( int nBlocks, const SymMatrix *&hess );
         void printHessian( int nVar, double *hesNz, int *hesIndRow, int *hesIndCol );
         /// Print a sparse Matrix in (column compressed) to a MATLAB readable file
         void printSparseMatlab( FILE *file, int nRow, int nVar, double *nz, int *indRow, int *indCol );
@@ -270,9 +270,9 @@ class SQPmethod
         /// Print information about the SQP method
         void printInfo();
         /// Compute gradient of Lagrangian function (dense version)
-        void calcLagrangeGradient( Matrix lambda, Matrix gradObj, Matrix constrJacFull, Matrix &gradLagrange, int flag );
+        void calcLagrangeGradient( const Matrix &lambda, const Matrix &gradObj, const Matrix &constrJacFull, Matrix &gradLagrange, int flag );
         /// Compute gradient of Lagrangian function (sparse version)
-        void calcLagrangeGradient( Matrix lambda, Matrix gradObj, double *jacNz, int *jacIndRow, int *jacIndCol, Matrix &gradLagrange, int flag );
+        void calcLagrangeGradient( const Matrix &lambda, const Matrix &gradObj, double *jacNz, int *jacIndRow, int *jacIndCol, Matrix &gradLagrange, int flag );
         /// Overloaded function for convenience, uses current variables of SQPiterate vars
         void calcLagrangeGradient( Matrix &gradLagrange, int flag );
         /// Update optimization tolerance (similar to SNOPT) in current iterate
@@ -301,7 +301,7 @@ class SQPmethod
         /// No globalization strategy
         int fullstep();
         /// Set new primal dual iterate
-        void acceptStep( Matrix deltaXi, Matrix lambdaQP, double alpha, double alphaSOC );
+        void acceptStep( const Matrix &deltaXi, const Matrix &lambdaQP, double alpha, double alphaSOC );
         /// Overloaded function for convenience, uses current variables of SQPiterate vars
         void acceptStep( double alpha, double alphaSOC );
         /// Reduce stepsize if a step is rejected
@@ -344,9 +344,9 @@ class SQPmethod
         /// Compute limited memory Hessian approximations based on update formulas
         void calcHessianUpdateLimitedMemory( int updateType, int hessScaling, double mu = 0.0 );
         /// [blockwise] Compute new approximation for Hessian by SR1 update
-        void calcSR1( Matrix gamma, Matrix delta, int iBlock );
+        void calcSR1( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Compute new approximation for Hessian by BFGS update with Powell modification
-        void calcBFGS( Matrix gamma, Matrix delta, int iBlock );
+        void calcBFGS( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// Set pointer to correct step and Lagrange gradient difference in a limited memory context
         void updateDeltaGamma();
 
@@ -354,17 +354,17 @@ class SQPmethod
          * Scaling of Hessian Approximation
          */
         /// [blockwise] Update scalars for COL sizing of Hessian approximation
-        void updateScalars( Matrix gamma, Matrix delta, int iBlock );
+        void updateScalars( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Size Hessian using scaling factor from Nocedal/Wright
-        void sizeHessianNocedal( Matrix gamma, Matrix delta, int iBlock );
+        void sizeHessianNocedal( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Size Hessian using the COL scaling factor
-        void sizeHessianTapia( Matrix gamma, Matrix delta, int iBlock );
+        void sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Size Hessian using the geometric mean of Nocedal and OL
-        void sizeHessianMean( Matrix gamma, Matrix delta, int iBlock );
+        void sizeHessianMean( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Compute COL sizing factor
         double sizingFactor( double theta, int iBlock );
         /// [blockwise] Compute initial scaling for L-SR1 matrix
-        int sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock );
+        int sizeHessianByrdLu( const Matrix &gammaMat, const Matrix &deltaMat, int iBlock );
 };
 
 } // namespace blockSQP

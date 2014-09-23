@@ -3,7 +3,7 @@
 namespace blockSQP
 {
 
-RestorationProblem::RestorationProblem( Problemspec *parentProblem, Matrix xiReference, Matrix constrReference )
+RestorationProblem::RestorationProblem( Problemspec *parentProblem, const Matrix &xiReference, const Matrix &constrReference )
 {
     int i, iVar, iCon, ieqCnt;
     double myEps = 2.2204e-16;
@@ -86,7 +86,7 @@ RestorationProblem::RestorationProblem( Problemspec *parentProblem, Matrix xiRef
 }
 
 
-void RestorationProblem::evaluate( Matrix xi, Matrix lambda,
+void RestorationProblem::evaluate( const Matrix &xi, const Matrix &lambda,
                                    double *objval, Matrix &constr,
                                    Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
                                    SymMatrix *&hess, int dmode, int *info )
@@ -95,7 +95,7 @@ void RestorationProblem::evaluate( Matrix xi, Matrix lambda,
     *info = 1;
 }
 
-void RestorationProblem::evaluate( Matrix xi, Matrix lambda,
+void RestorationProblem::evaluate( const Matrix &xi, const Matrix &lambda,
                                    double *objval, Matrix &constr,
                                    Matrix &gradObj, Matrix &constrJac,
                                    SymMatrix *&hess, int dmode, int *info )
@@ -168,7 +168,7 @@ void RestorationProblem::evaluate( Matrix xi, Matrix lambda,
 }
 
 
-void RestorationProblem::evalObjective( Matrix xi, double *objval,
+void RestorationProblem::evalObjective( const Matrix &xi, double *objval,
                                         Matrix &gradObj, SymMatrix *&hess,
                                         int dmode, int *info )
 {
@@ -212,7 +212,7 @@ void RestorationProblem::evalObjective( Matrix xi, double *objval,
 }
 
 
-void RestorationProblem::convertJacobian( Matrix constrJac, double *&jacNz,
+void RestorationProblem::convertJacobian( const Matrix &constrJac, double *&jacNz,
                                           int *&jacIndRow, int *&jacIndCol, bool firstCall )
 {
     int nnz, i, j, count;
@@ -315,7 +315,7 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJ
 }
 
 
-void RestorationProblem::printVariables( Matrix xi, Matrix lambda, int verbose )
+void RestorationProblem::printVariables( const Matrix &xi, const Matrix &lambda, int verbose )
 {
     int k;
 
@@ -328,7 +328,7 @@ void RestorationProblem::printVariables( Matrix xi, Matrix lambda, int verbose )
 }
 
 
-void RestorationProblem::printConstraints( Matrix constr, Matrix lambda )
+void RestorationProblem::printConstraints( const Matrix &constr, const Matrix &lambda )
 {
 
     /*
