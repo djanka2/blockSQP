@@ -1,6 +1,6 @@
 # Makefile for standalone version of blockSQP
 
-QPOASESDIR = /home/tester/qpOASES
+QPOASESDIR = /home/djanka/numerics/qpOASES
 QPOASESINCLUDE = $(QPOASESDIR)/include_aw
 QPOASESLIBDIR = $(QPOASESDIR)/bin
 
