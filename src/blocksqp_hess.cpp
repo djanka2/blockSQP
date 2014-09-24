@@ -124,7 +124,7 @@ int SQPmethod::calcFiniteDiffHessian()
 }
 
 
-void SQPmethod::updateScalars( Matrix gamma, Matrix delta, int iBlock )
+void SQPmethod::updateScalars( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j;
     int dim = delta.M();
@@ -147,7 +147,7 @@ void SQPmethod::updateScalars( Matrix gamma, Matrix delta, int iBlock )
 }
 
 
-void SQPmethod::sizeHessianNocedal( Matrix gamma, Matrix delta, int iBlock )
+void SQPmethod::sizeHessianNocedal( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j;
     double value1, value2, value3;
@@ -171,7 +171,7 @@ void SQPmethod::sizeHessianNocedal( Matrix gamma, Matrix delta, int iBlock )
     stats->averageSizingFactor += value3;
 }
 
-void SQPmethod::sizeHessianMean( Matrix gamma, Matrix delta, int iBlock )
+void SQPmethod::sizeHessianMean( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j;
     double value1, value2, value3;
@@ -189,7 +189,7 @@ void SQPmethod::sizeHessianMean( Matrix gamma, Matrix delta, int iBlock )
     stats->averageSizingFactor += value3;
 }
 
-void SQPmethod::sizeHessianTapia( Matrix gamma, Matrix delta, int iBlock )
+void SQPmethod::sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     if( gamma.M() == 0 )
         return;
@@ -230,8 +230,8 @@ double SQPmethod::sizingFactor( double theta, int iBlock )
     double scale;
     double myEps = 1.0e2 * param->eps;
 
-    if( vars->deltaNorm(iBlock) > myEps && vars->deltaNormOld(iBlock) > myEps ) 
-        scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaGamma(iBlock) / vars->deltaNorm(iBlock) ) / 
+    if( vars->deltaNorm(iBlock) > myEps && vars->deltaNormOld(iBlock) > myEps )
+        scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaGamma(iBlock) / vars->deltaNorm(iBlock) ) /
             ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaBdelta(iBlock) / vars->deltaNorm(iBlock) );
         //if( (scale = (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaBdelta(iBlock) / vars->deltaNorm(iBlock)) > myEps )
             //scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaGamma(iBlock) / vars->deltaNorm(iBlock) ) / scale;
@@ -302,7 +302,7 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
 }
 
 
-int SQPmethod::sizeHessianByrdLu( Matrix gammaMat, Matrix deltaMat, int iBlock )
+int SQPmethod::sizeHessianByrdLu( const Matrix &gammaMat, const Matrix &deltaMat, int iBlock )
 {
     Matrix W, Dinv, N, C, gammai, deltai;
     int i, j, k, m, posDelta, posGamma, posOldest, posNewest;
@@ -579,7 +579,7 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
 }
 
 
-void SQPmethod::calcBFGS( Matrix gamma, Matrix delta, int iBlock )
+void SQPmethod::calcBFGS( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j, k, dim = gamma.M();
     Matrix Bdelta;
@@ -588,6 +588,11 @@ void SQPmethod::calcBFGS( Matrix gamma, Matrix delta, int iBlock )
     double h2 = 0.0;
     double thetaPowell = 0.0;
     int damped;
+
+    // Work with a local copy of gamma because damping may need to change gamma.
+    // Note that vars->gamma needs to remain unchanged! This may be important in a limited memory context:
+    // When information is "forgotten", B_i-1 is different and the original gamma might lead to an undamped update with the new B_i-1!
+    Matrix gamma2 = gamma;
 
     B = &vars->hess[iBlock];
 
@@ -614,13 +619,11 @@ void SQPmethod::calcBFGS( Matrix gamma, Matrix delta, int iBlock )
         thetaPowell = (1.0 - param->hessDamp)*h1 / ( h1 - h2 );
 
         // Redefine gamma and h2 = delta^T * gamma
-        ///\note vars->gamma remains unchanged! This is important in a limited memory context:
-        /// When information is "forgotten", B_i-1 is different and gamma might lead to an undamped update with the new B_i-1!
         h2 = 0.0;
         for( i=0; i<dim; i++ )
         {
-            gamma( i ) = thetaPowell*gamma( i ) + (1.0 - thetaPowell)*Bdelta( i );
-            h2 += delta( i ) * gamma( i );
+            gamma2( i ) = thetaPowell*gamma2( i ) + (1.0 - thetaPowell)*Bdelta( i );
+            h2 += delta( i ) * gamma2( i );
         }
 
         // Also redefine deltaGammaOld for computation of sizing factor in the next iteration
@@ -647,14 +650,14 @@ void SQPmethod::calcBFGS( Matrix gamma, Matrix delta, int iBlock )
         for( i=0; i<dim; i++ )
             for( j=i; j<dim; j++ )
                 (*B)( i,j ) = (*B)( i,j ) - Bdelta( i ) * Bdelta( j ) / h1
-                                          + gamma( i ) * gamma( j ) / h2;
+                                          + gamma2( i ) * gamma2( j ) / h2;
 
         vars->noUpdateCounter[iBlock] = 0;
     }
 }
 
 
-void SQPmethod::calcSR1( Matrix gamma, Matrix delta, int iBlock )
+void SQPmethod::calcSR1( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j, k, dim = gamma.M();
     Matrix gmBdelta;

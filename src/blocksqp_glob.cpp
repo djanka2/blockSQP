@@ -9,7 +9,7 @@ void SQPmethod::acceptStep( double alpha, double alphaSOC )
     acceptStep( vars->deltaXi, vars->lambdaQP, alpha, alphaSOC );
 }
 
-void SQPmethod::acceptStep( Matrix deltaXi, Matrix lambdaQP, double alpha, double alphaSOC )
+void SQPmethod::acceptStep( const Matrix &deltaXi, const Matrix &lambdaQP, double alpha, double alphaSOC )
 {
     int k;
     double lStpNorm;
@@ -477,7 +477,7 @@ int SQPmethod::feasibilityRestorationHeuristic()
 
     // Call problem specific heuristic to reduce constraint violation.
     // For shooting methods that means setting consistent values for shooting nodes by one forward integration.
-    for( k=0; k<prob->nVar; k++ ) // input: last successful step 
+    for( k=0; k<prob->nVar; k++ ) // input: last successful step
         vars->trialXi( k ) = vars->xi( k );
     prob->reduceConstrVio( vars->trialXi, &info );
     if( info )// If an error occured in restoration heuristics, abort
@@ -485,6 +485,7 @@ int SQPmethod::feasibilityRestorationHeuristic()
 
     // Compute objective and constraints at the new (hopefully feasible) point
     prob->evaluate( vars->trialXi, &vars->obj, vars->constr, &info );
+    cNormTrial = lInfConstraintNorm( vars->trialXi, vars->constr, prob->bu, prob->bl );
     if( info != 0 || vars->obj < prob->objLo || vars->obj > prob->objUp || !(vars->obj == vars->obj) || !(cNormTrial == cNormTrial) )
         return -1;
 

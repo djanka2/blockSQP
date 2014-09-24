@@ -53,13 +53,15 @@ class Matrix
       int M( void ) const;                          ///< number of rows
       int N( void ) const;                          ///< number of columns
       int LDIM( void ) const;                       ///< leading dimensions
-      double *ARRAY( void );                        ///< returns pointer to data array
+      double *ARRAY( void ) const;                        ///< returns pointer to data array
       int TFLAG( void ) const;                      ///< returns this->tflag (1 if it is a submatrix and does not own the memory and 0 otherwise)
 
       virtual double &operator()( int i, int j );
+      virtual double &operator()( int i, int j ) const;
       virtual double &operator()( int i );
-      virtual double a( int i, int j ) const;
-      virtual double a( int i ) const;
+      virtual double &operator()( int i ) const;
+      //virtual double a( int i, int j ) const;
+      //virtual double a( int i ) const;
 
       Matrix &Dimension( int, int = 1, int = -1 );
       Matrix &Initialize( double (*)( int, int ) );
@@ -95,9 +97,11 @@ class SymMatrix : public Matrix
         ~SymMatrix( void );
 
         virtual double &operator()( int i, int j );
+        virtual double &operator()( int i, int j ) const;
         virtual double &operator()( int i );
-        virtual double a( int i, int j ) const;
-        virtual double a( int i ) const;
+        virtual double &operator()( int i ) const;
+        //virtual double a( int i, int j ) const;
+        //virtual double a( int i ) const;
 
         SymMatrix &Dimension( int = 1 );
         SymMatrix &Dimension( int, int, int );

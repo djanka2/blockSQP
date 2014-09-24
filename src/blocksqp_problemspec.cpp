@@ -3,7 +3,7 @@
 namespace blockSQP
 {
 
-void Problemspec::evaluate( Matrix xi, double *objval, Matrix &constr, int *info )
+void Problemspec::evaluate( const Matrix &xi, double *objval, Matrix &constr, int *info )
 {
     Matrix lambdaDummy, gradObjDummy;
     SymMatrix *hessDummy;

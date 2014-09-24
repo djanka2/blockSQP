@@ -7,7 +7,7 @@ namespace blockSQP
  * Compute the inverse of a matrix
  * using LU decomposition (DGETRF and DGETRI)
  */
-int inverse( Matrix A, Matrix &Ainv )
+int inverse( const Matrix &A, Matrix &Ainv )
 {
     int i, j;
     int n, ldim, lwork, info = 0;
@@ -39,7 +39,7 @@ int inverse( Matrix A, Matrix &Ainv )
 /**
  * Compute eigenvalues of a symmetric matrix by DSPEV
  */
-int calcEigenvalues( SymMatrix B, Matrix &ev )
+int calcEigenvalues( const SymMatrix &B, Matrix &ev )
 {
     int i, j, n;
     SymMatrix temp;
@@ -67,7 +67,7 @@ int calcEigenvalues( SymMatrix B, Matrix &ev )
  * Estimate the smalles eigenvalue of a sqare matrix
  * with the help og Gershgorin's circle theorem
  */
-double estimateSmallestEigenvalue( Matrix B )
+double estimateSmallestEigenvalue( const Matrix &B )
 {
     int i, j;
     double radius;
@@ -93,7 +93,7 @@ double estimateSmallestEigenvalue( Matrix B )
 /**
  * Compute scalar product aTb
  */
-double adotb( Matrix a, Matrix b )
+double adotb( const Matrix &a, const Matrix &b )
 {
     double norm = 0.0;
 
@@ -117,7 +117,7 @@ double adotb( Matrix a, Matrix b )
 /**
  * Compute the matrix vector product for a column-compressed sparse matrix A with a vector b and store it in Atimesb
  */
-void sparseAtimesb( double *Anz, int *AIndRow, int *AIndCol, Matrix b, Matrix &Atimesb )
+void sparseAtimesb( double *Anz, int *AIndRow, int *AIndCol, const Matrix &b, Matrix &Atimesb )
 {
     int nCol = b.M();
     int nRow = Atimesb.M();
@@ -139,7 +139,7 @@ void sparseAtimesb( double *Anz, int *AIndRow, int *AIndCol, Matrix b, Matrix &A
 /**
  * Compute the matrix vector product A*b and store it in Atimesb
  */
-void Atimesb( Matrix A, Matrix b, Matrix &Atimesb )
+void Atimesb( const Matrix &A, const Matrix &b, Matrix &Atimesb )
 {
     Atimesb.Initialize( 0.0 );
     for( int i=0; i<A.M(); i++ )
@@ -147,7 +147,7 @@ void Atimesb( Matrix A, Matrix b, Matrix &Atimesb )
             Atimesb( i ) += A( i, k ) * b( k );
 }
 
-double l1VectorNorm( Matrix v )
+double l1VectorNorm( const Matrix &v )
 {
     double norm = 0.0;
 
@@ -164,7 +164,7 @@ double l1VectorNorm( Matrix v )
     return norm;
 }
 
-double l2VectorNorm( Matrix v )
+double l2VectorNorm( const Matrix &v )
 {
     double norm = 0.0;
 
@@ -181,7 +181,7 @@ double l2VectorNorm( Matrix v )
     return sqrt(norm);
 }
 
-double lInfVectorNorm( Matrix v )
+double lInfVectorNorm( const Matrix &v )
 {
     double norm = 0.0;
 
@@ -203,7 +203,7 @@ double lInfVectorNorm( Matrix v )
 /**
  * Calculate weighted l1 norm of constraint violations
  */
-double l1ConstraintNorm( Matrix xi, Matrix constr, Matrix bu, Matrix bl, Matrix weights )
+double l1ConstraintNorm( const Matrix &xi, const Matrix &constr, const Matrix &bu, const Matrix &bl, const Matrix &weights )
 {
     double norm = 0.0;
     int i;
@@ -240,7 +240,7 @@ double l1ConstraintNorm( Matrix xi, Matrix constr, Matrix bu, Matrix bl, Matrix 
 /**
  * Calculate l1 norm of constraint violations
  */
-double l1ConstraintNorm( Matrix xi, Matrix constr, Matrix bu, Matrix bl )
+double l1ConstraintNorm( const Matrix &xi, const Matrix &constr, const Matrix &bu, const Matrix &bl )
 {
     double norm = 0.0;
     int i;
@@ -271,7 +271,7 @@ double l1ConstraintNorm( Matrix xi, Matrix constr, Matrix bu, Matrix bl )
 /**
  * Calculate l2 norm of constraint violations
  */
-double l2ConstraintNorm( Matrix xi, Matrix constr, Matrix bu, Matrix bl )
+double l2ConstraintNorm( const Matrix &xi, const Matrix &constr, const Matrix &bu, const Matrix &bl )
 {
     double norm = 0.0;
     int i;
@@ -298,7 +298,7 @@ double l2ConstraintNorm( Matrix xi, Matrix constr, Matrix bu, Matrix bl )
 /**
  * Calculate l_Infinity norm of constraint violations
  */
-double lInfConstraintNorm( Matrix xi, Matrix constr, Matrix bu, Matrix bl )
+double lInfConstraintNorm( const Matrix &xi, const Matrix &constr, const Matrix &bu, const Matrix &bl )
 {
     double norm = 0.0;
     int i;

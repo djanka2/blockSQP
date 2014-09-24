@@ -66,6 +66,15 @@ double &Matrix::operator()( int i, int j )
     return array[i+j*ldim];
 }
 
+double &Matrix::operator()( int i, int j ) const
+{
+    #ifdef MATRIX_DEBUG
+    if ( i < 0 || i >= m || j < 0 || j >= n )
+        Error("Invalid matrix entry");
+    #endif
+
+    return array[i+j*ldim];
+}
 
 double &Matrix::operator()( int i )
 {
@@ -77,18 +86,7 @@ double &Matrix::operator()( int i )
     return array[i];
 }
 
-double Matrix::a( int i, int j ) const
-{
-    #ifdef MATRIX_DEBUG
-    if ( i < 0 || i >= m || j < 0 || j >= n )
-        Error("Invalid matrix entry");
-    #endif
-
-    return array[i+j*ldim];
-}
-
-
-double Matrix::a( int i ) const
+double &Matrix::operator()( int i ) const
 {
     #ifdef MATRIX_DEBUG
     if ( i < 0 || i >= m )
@@ -97,6 +95,27 @@ double Matrix::a( int i ) const
 
     return array[i];
 }
+
+//double Matrix::a( int i, int j ) const
+//{
+    //#ifdef MATRIX_DEBUG
+    //if ( i < 0 || i >= m || j < 0 || j >= n )
+        //Error("Invalid matrix entry");
+    //#endif
+
+    //return array[i+j*ldim];
+//}
+
+
+//double Matrix::a( int i ) const
+//{
+    //#ifdef MATRIX_DEBUG
+    //if ( i < 0 || i >= m )
+        //Error("Invalid matrix entry");
+    //#endif
+
+    //return array[i];
+//}
 
 
 Matrix::Matrix( int M, int N, int LDIM )
@@ -142,7 +161,8 @@ Matrix::Matrix( const Matrix &A )
 
     for ( i = 0; i < m; i++ )
         for ( j = 0; j < n ; j++ )
-            (*this)(i,j) = A.a(i,j);
+            (*this)(i,j) = A(i,j);
+            //(*this)(i,j) = A.a(i,j);
 }
 
 
@@ -171,7 +191,7 @@ int Matrix::LDIM( void ) const
 }
 
 
-double *Matrix::ARRAY( void )
+double *Matrix::ARRAY( void ) const
 {   return array;
 }
 
@@ -281,7 +301,8 @@ const Matrix &Matrix::Print( FILE *f, int DIGITS, int flag ) const
     {
         for ( j = 0; j < n; j++ )
         {
-            x = a(i,j);
+            x = (*this)(i,j);
+            //x = a(i,j);
 
             if ( flag == 1 )
             {
@@ -363,6 +384,24 @@ double &SymMatrix::operator()( int i, int j )
 }
 
 
+double &SymMatrix::operator()( int i, int j ) const
+{
+    #ifdef MATRIX_DEBUG
+    if ( i < 0 || i >= m || j < 0 || j >= n )
+    Error("Invalid matrix entry");
+    #endif
+
+    int pos;
+
+    if( i < j )//reference to upper triangular part
+        pos = (int) (j + i*(m - (i+1.0)/2.0));
+    else
+        pos = (int) (i + j*(m - (j+1.0)/2.0));
+
+    return array[pos];
+}
+
+
 double &SymMatrix::operator()( int i )
 {
     #ifdef MATRIX_DEBUG
@@ -374,25 +413,7 @@ double &SymMatrix::operator()( int i )
 }
 
 
-double SymMatrix::a( int i, int j ) const
-{
-    #ifdef MATRIX_DEBUG
-    if ( i < 0 || i >= m || j < 0 || j >= n )
-    Error("Invalid matrix entry");
-    #endif
-
-    int pos;
-
-    if( j > i )//reference to upper triangular part
-        pos = (int) (j + i*(m - (i+1.0)/2.0));
-    else
-        pos = (int) (i + j*(m - (j+1.0)/2.0));
-
-    return array[pos];
-}
-
-
-double SymMatrix::a( int i ) const
+double &SymMatrix::operator()( int i ) const
 {
     #ifdef MATRIX_DEBUG
     if ( i >= m*(m+1)/2.0 )
@@ -401,6 +422,35 @@ double SymMatrix::a( int i ) const
 
     return array[i];
 }
+
+
+//double SymMatrix::a( int i, int j ) const
+//{
+    //#ifdef MATRIX_DEBUG
+    //if ( i < 0 || i >= m || j < 0 || j >= n )
+    //Error("Invalid matrix entry");
+    //#endif
+
+    //int pos;
+
+    //if( j > i )//reference to upper triangular part
+        //pos = (int) (j + i*(m - (i+1.0)/2.0));
+    //else
+        //pos = (int) (i + j*(m - (j+1.0)/2.0));
+
+    //return array[pos];
+//}
+
+
+//double SymMatrix::a( int i ) const
+//{
+    //#ifdef MATRIX_DEBUG
+    //if ( i >= m*(m+1)/2.0 )
+    //Error("Invalid matrix entry");
+    //#endif
+
+    //return array[i];
+//}
 
 
 SymMatrix::SymMatrix( int M )
@@ -462,7 +512,8 @@ SymMatrix::SymMatrix( const Matrix &A )
 
     for ( j=0; j<m; j++ )//columns
          for ( i=j; i<m; i++ )//rows
-             (*this)(i,j) = A.a(i,j);
+             (*this)(i,j) = A(i,j);
+             //(*this)(i,j) = A.a(i,j);
 }
 
 
@@ -479,7 +530,8 @@ SymMatrix::SymMatrix( const SymMatrix &A )
 
     for ( j=0; j<m; j++ )//columns
          for ( i=j; i<m; i++ )//rows
-             (*this)(i,j) = A.a(i,j);
+             (*this)(i,j) = A(i,j);
+             //(*this)(i,j) = A.a(i,j);
 }
 
 
@@ -599,7 +651,8 @@ Matrix Transpose( const Matrix &A )
 
     for ( i = 0; i < A.N(); i++ )
         for ( j = 0; j < A.M(); j++ )
-            array[i+j*A.N()] = A.a(j,i);
+            array[i+j*A.N()] = A(j,i);
+            //array[i+j*A.N()] = A.a(j,i);
 
     return Matrix( A.N(), A.M(), array, A.N() );
 }
@@ -613,7 +666,8 @@ Matrix &Transpose( const Matrix &A, Matrix &T )
 
     for ( i = 0; i < A.N(); i++ )
         for ( j = 0; j < A.M(); j++ )
-            T(i,j) = A.a(j,i);
+            T(i,j) = A(j,i);
+            //T(i,j) = A.a(j,i);
 
     return T;
 }

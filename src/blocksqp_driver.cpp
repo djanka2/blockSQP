@@ -12,16 +12,16 @@ class MyProblem : public Problemspec
         Matrix xi0;
 
     public:
-        MyProblem( int nVar_, int nCon_, int nBlocks_, int *BlockIdx_, Matrix bl_, Matrix bu_, Matrix xi0_ );
-        virtual void convertJacobian( Matrix constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall = 0 );
+        MyProblem( int nVar_, int nCon_, int nBlocks_, int *BlockIdx_, const Matrix &bl_, const Matrix &bu_, const Matrix &xi0_ );
+        virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall = 0 );
         virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac );
         virtual void initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol );
         virtual void printInfo();
 
-        virtual void evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &constr,
+        virtual void evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
                                Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
                                SymMatrix *&hess, int dmode, int *info );
-        virtual void evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &constr,
+        virtual void evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
                                Matrix &gradObj, Matrix &constrJac, SymMatrix *&hess, int dmode, int *info );
 };
 
@@ -49,7 +49,7 @@ void MyProblem::printInfo()
  * Constraint evaluation methods still operate on dense Jacobian, this is a generic method to convert it
  * to a sparse matrix in Harwell--Boeing (column compressed) format
  */
-void MyProblem::convertJacobian( Matrix constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall )
+void MyProblem::convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall )
 {
     int nnz, count, i, j;
 
@@ -138,12 +138,11 @@ void MyProblem::initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&ja
  * - bl[nVar+nCon], bu[nVar+nCon]: lower and upper bounds for variables and constraints
  * - nBlocks: number of diagonal blocks in the Hessian
  * - blockIdx[nBlocks+1]: where do blocks start and end?
- * - objLo, objUp: lower and upper bound for objective (should not be active at the solution)
  *
  * Optional:
  * - conNames[nCon], varNames[nVar]: names for constraints and variables
  */
-MyProblem::MyProblem( int nVar_, int nCon_, int nBlocks_, int *blockIdx_, Matrix bl_, Matrix bu_, Matrix xi0_ )
+MyProblem::MyProblem( int nVar_, int nCon_, int nBlocks_, int *blockIdx_, const Matrix &bl_, const Matrix &bu_, const Matrix &xi0_ )
 {
     nVar = nVar_;
     nCon = nCon_;
@@ -186,9 +185,9 @@ MyProblem::MyProblem( int nVar_, int nCon_, int nBlocks_, int *blockIdx_, Matrix
  * Evaluate functions and derivatives (sparse).
  * This is just a wrapper for the dense version.
  */
-void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &constr,
-                           Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
-                           SymMatrix *&hess, int dmode, int *info )
+void MyProblem::evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
+                          Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
+                          SymMatrix *&hess, int dmode, int *info )
 {
     Matrix constrJac;
 
@@ -205,9 +204,9 @@ void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &cons
  * dmode = 0: objective and constraint evaluation
  * dmode = 1: objective gradient and constraint Jacobian
  */
-void MyProblem::evaluate( Matrix xi, Matrix lambda, double *objval, Matrix &constr,
-                           Matrix &gradObj, Matrix &constrJac, SymMatrix *&hess,
-                           int dmode, int *info )
+void MyProblem::evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
+                          Matrix &gradObj, Matrix &constrJac, SymMatrix *&hess,
+                          int dmode, int *info )
 {
     *info = 0;
 

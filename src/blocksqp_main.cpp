@@ -289,7 +289,7 @@ void SQPmethod::finish()
  * flag == 1: output dL(xi_k+1, lambda_k+1) - L(xi_k, lambda_k+1)
  * flag == 2: output dL(xi_k+1, lambda_k+1) - df(xi)
  */
-void SQPmethod::calcLagrangeGradient( Matrix lambda, Matrix gradObj, double *jacNz, int *jacIndRow, int *jacIndCol,
+void SQPmethod::calcLagrangeGradient( const Matrix &lambda, const Matrix &gradObj, double *jacNz, int *jacIndRow, int *jacIndCol,
                                       Matrix &gradLagrange, int flag )
 {
     int iVar, iCon;
@@ -322,7 +322,7 @@ void SQPmethod::calcLagrangeGradient( Matrix lambda, Matrix gradObj, double *jac
  * flag == 1: output dL(xi_k+1, lambda_k+1) - L(xi_k, lambda_k+1)
  * flag == 2: output dL(xi_k+1, lambda_k+1) - df(xi)
  */
-void SQPmethod::calcLagrangeGradient( Matrix lambda, Matrix gradObj, Matrix constrJac,
+void SQPmethod::calcLagrangeGradient( const Matrix &lambda, const Matrix &gradObj, const Matrix &constrJac,
                                       Matrix &gradLagrange, int flag )
 {
     int iVar, iCon;

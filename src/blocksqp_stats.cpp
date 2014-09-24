@@ -64,8 +64,7 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, bool hasConve
 #ifdef MYDEBUG
         // Print everything in a CSV file as well
         fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
-                        vars->obj, vars->cNorm, vars->tol,
-                        0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0 );
+                 vars->obj, vars->cNorm, vars->tol, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0 );
 #endif
     }
     else
@@ -99,22 +98,22 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, bool hasConve
         if( vars->alpha == 1.0 && vars->steptype != -1 )
             printf("%-9.1e", vars->alpha );
         else
-            printf("\033[0;36m%-9.1e\033[0m", vars->alpha );
+            //printf("\033[0;36m%-9.1e\033[0m", vars->alpha );
+            printf("%-9.1e", vars->alpha );
         if( vars->alphaSOC == 0.0 )
             printf("%-9.1e", vars->alphaSOC );
         else
-            printf("\033[0;36m%-9.1e\033[0m", vars->alphaSOC );
+            //printf("\033[0;36m%-9.1e\033[0m", vars->alphaSOC );
+            printf("%-9.1e", vars->alphaSOC );
         printf("%3i, %3i, %-9.1e", hessSkipped, hessDamped, averageSizingFactor );
         printf("%i, %-9.1e\n", qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
 
 #ifdef MYDEBUG
         // Print everything in a CSV file as well
         fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
-                        vars->obj, vars->cNorm, vars->tol,
-                        vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
-                        vars->lambdaStepNorm, vars->alpha,
-                        vars->alphaSOC, hessSkipped, hessDamped, averageSizingFactor,
-                        qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
+                 vars->obj, vars->cNorm, vars->tol, vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
+                 vars->lambdaStepNorm, vars->alpha, vars->alphaSOC, hessSkipped, hessDamped, averageSizingFactor,
+                 qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
 #endif
     }
 
@@ -134,7 +133,8 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, bool hasConve
     qpResolve = 0;
 
     if( hasConverged && vars->steptype < 2 )
-        printf("\033[1;32m***CONVERGENCE ACHIEVED!***\n\033[0m");
+        //printf("\033[1;32m***CONVERGENCE ACHIEVED!***\n\033[0m");
+        printf("***CONVERGENCE ACHIEVED!***\n");
 }
 
 
@@ -176,7 +176,7 @@ void SQPstats::initStats()
 /**
  * Print primal variables to a MATLAB file
  */
-void SQPstats::printPrimalVars( Matrix xi )
+void SQPstats::printPrimalVars( const Matrix &xi )
 {
     for( int i=0; i<xi.M()-1; i++ )
         fprintf( primalVarsFile, " %23.16e,", xi( i ) );
@@ -187,7 +187,7 @@ void SQPstats::printPrimalVars( Matrix xi )
 /**
  * Print primal variables to a MATLAB file
  */
-void SQPstats::printDualVars( Matrix lambda )
+void SQPstats::printDualVars( const Matrix &lambda )
 {
     for( int i=0; i<lambda.M()-1; i++ )
         fprintf( dualVarsFile, " %23.16e,", lambda( i ) );
@@ -198,7 +198,7 @@ void SQPstats::printDualVars( Matrix lambda )
 /**
  * Print dense Hessian in a MATLAB file
  */
-void SQPstats::printHessian( int nBlocks, SymMatrix *hess )
+void SQPstats::printHessian( int nBlocks, const SymMatrix *&hess )
 {
     PATHSTR filename;
     int offset, i, j, iBlock, nVar;
@@ -252,7 +252,7 @@ void SQPstats::printHessian( int nVar, double *hesNz, int *hesIndRow, int *hesIn
 /**
  * Print dense Jacobian in a MATLAB file
  */
-void SQPstats::printJacobian( Matrix constrJac )
+void SQPstats::printJacobian( const Matrix &constrJac )
 {
     PATHSTR filename;
 
