@@ -138,7 +138,6 @@ void MyProblem::initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&ja
  * - bl[nVar+nCon], bu[nVar+nCon]: lower and upper bounds for variables and constraints
  * - nBlocks: number of diagonal blocks in the Hessian
  * - blockIdx[nBlocks+1]: where do blocks start and end?
- * - objLo, objUp: lower and upper bound for objective (should not be active at the solution)
  *
  * Optional:
  * - conNames[nCon], varNames[nVar]: names for constraints and variables
