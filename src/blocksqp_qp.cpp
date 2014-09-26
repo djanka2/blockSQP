@@ -19,7 +19,15 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     qpOASES::returnValue ret;
     double *lb, *lu, *lbA, *luA;
     double cpuTime;
+    bool enableQPLoop;
     int maxIt;
+
+    // QP loop is expensive, do it only when required:
+    // if filter line search, if QP is not a SOC, first iteration is pos def by construction
+    if( param->globalization == 1 && flag == 0 && stats->itCount > 1 )
+        // SR1 update or BFGS without damping
+        if( param->hessUpdate == 1 || (param->hessUpdate == 2 && !param->hessDamp) )
+            enableQPLoop = true;
 
     // set options for qpOASES
     opts.enableInertiaCorrection = qpOASES::BT_TRUE;
@@ -79,7 +87,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 #endif
 
     /// \todo For now: just duplicate the whole qp object (we probably only need the active set)
-    if( param->globalization == 1 && param->hessUpdate == 1 && flag == 0 )
+    if( enableQPLoop )
     {// Store last successful QP in temporary storage
         qpSave = *qp;
         opts.enableInertiaCorrection = qpOASES::BT_FALSE;
@@ -105,7 +113,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 
     /* If filter line search with indefinite Hessian approximations is used
      * we may have to convexify and re-solve QP. (expensive!) */
-    if( param->globalization == 1 && param->hessUpdate == 1 && flag == 0 && stats->itCount > 1 )
+    if( enableQPLoop )
         ret = QPLoop( opts, ret, deltaXi, lambdaQP, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA );
 
     // Read solution

@@ -97,7 +97,7 @@ int SQPmethod::run( int maxIt, int warmStart )
     }
 
     /*
-     * SQP Loop:
+     * SQP Loop: first iteration has itCount = 1
      */
     for( it=0; it<maxIt; it++ )
     {

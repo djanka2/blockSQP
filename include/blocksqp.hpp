@@ -35,7 +35,8 @@ class SQPoptions
         double colEps;                      ///< epsilon for COL scaling strategy
         double colTau1;                     ///< tau1 for COL scaling strategy
         double colTau2;                     ///< tau2 for COL scaling strategy
-        double hessDamp;                    ///< damping factor for BFGS Powell modification
+        int hessDamp;                       ///< activate Powell damping for BFGS
+        double hessDampFac;                 ///< damping factor for BFGS Powell modification
         int hessUpdate;                     ///< Type of Hessian approximation
         int fallbackUpdate;                 ///< If indefinite update is used, the type of fallback strategy
         int hessLimMem;                     ///< Full or limited memory

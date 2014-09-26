@@ -44,8 +44,11 @@ SQPoptions::SQPoptions()
     fallbackScaling = 4;
     iniHessDiag = 1.0;
 
+    // Activate damping strategy for BFGS (if deactivated, BFGS might yield indefinite updates!)
+    hessDamp = 1;
+
     // Damping factor for Powell modification of BFGS updates ( between 0.0 and 1.0 )
-    hessDamp = 0.2;
+    hessDampFac = 0.2;
 
     // 0: constant, 1: SR1, 2: BFGS (damped), 3: [not used] , 4: finiteDiff, 5: Gauss-Newton
     hessUpdate = 1;

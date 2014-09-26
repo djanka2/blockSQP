@@ -613,24 +613,25 @@ void SQPmethod::calcBFGS( const Matrix &gamma, const Matrix &delta, int iBlock )
     // Damping strategy to maintain pos. def. (Nocedal/Wright p.537; SNOPT paper)
     // Interpolates between current approximation and unmodified BFGS
     damped = 0;
-    if( h2 < param->hessDamp * h1 / vars->alpha && fabs( h1 - h2 ) > 1.0e-12 )
-    {// At the first iteration h1 and h2 are equal due to Tapia scaling
+    if( param->hessDamp )
+        if( h2 < param->hessDampFac * h1 / vars->alpha && fabs( h1 - h2 ) > 1.0e-12 )
+        {// At the first iteration h1 and h2 are equal due to Tapia scaling
 
-        thetaPowell = (1.0 - param->hessDamp)*h1 / ( h1 - h2 );
+            thetaPowell = (1.0 - param->hessDampFac)*h1 / ( h1 - h2 );
 
-        // Redefine gamma and h2 = delta^T * gamma
-        h2 = 0.0;
-        for( i=0; i<dim; i++ )
-        {
-            gamma2( i ) = thetaPowell*gamma2( i ) + (1.0 - thetaPowell)*Bdelta( i );
-            h2 += delta( i ) * gamma2( i );
+            // Redefine gamma and h2 = delta^T * gamma
+            h2 = 0.0;
+            for( i=0; i<dim; i++ )
+            {
+                gamma2( i ) = thetaPowell*gamma2( i ) + (1.0 - thetaPowell)*Bdelta( i );
+                h2 += delta( i ) * gamma2( i );
+            }
+
+            // Also redefine deltaGammaOld for computation of sizing factor in the next iteration
+            vars->deltaGammaOld( iBlock ) = h2;
+
+            damped = 1;
         }
-
-        // Also redefine deltaGammaOld for computation of sizing factor in the next iteration
-        vars->deltaGammaOld( iBlock ) = h2;
-
-        damped = 1;
-    }
 
     // For statistics: count number of damped blocks
     stats->hessDamped += damped;
