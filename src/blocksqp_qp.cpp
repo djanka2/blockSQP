@@ -156,7 +156,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
                                         double *g, qpOASES::Matrix *A, double *lb, double *lu, double *lbA, double *luA )
 {
-    int iQP, maxQP = 1, maxIt;
+    int iQP, maxQP = 1, maxIt, hessDampSave;
     qpOASES::SymmetricMatrix *H;
     qpOASES::SolutionAnalysis solAna;
     qpOASES::returnValue retval;
@@ -188,9 +188,12 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         //stats->itCount++;
 
         /* 2.) New Hessian: (1-mu)*H_SR1 + mu*H_BFGS */
-        // BFGS update
+        // fallback: damped BFGS update
         stats->itCount--;
+        hessDampSave = param->hessDamp;
+        param->hessDamp = 1;
         calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
+        param->hessDamp = hessDampSave;
         stats->itCount++;
 
         if( iQP != maxQP-1 )
