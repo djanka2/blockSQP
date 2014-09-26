@@ -19,7 +19,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     qpOASES::returnValue ret;
     double *lb, *lu, *lbA, *luA;
     double cpuTime;
-    bool enableQPLoop;
+    bool enableQPLoop = false;
     int maxIt;
 
     // QP loop is expensive, do it only when required:
