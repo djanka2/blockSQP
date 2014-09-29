@@ -35,7 +35,6 @@ all: blockSQP
 
 library: $(OBJECTS) | $(LIBDIR)
 	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS)
-	python makemin.py
 
 blockSQP: library $(OBJDIR)/blocksqp_driver.o
 	g++ -o blockSQP $(OBJDIR)/blocksqp_driver.o $(LIBS)
