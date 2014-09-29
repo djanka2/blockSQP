@@ -53,4 +53,4 @@ $(OBJDIR):
 	mkdir $(OBJDIR)
 
 clean:
-	rm -f $(OBJDIR)/*.o $(LIBDIR)/libblockSQP.so blockSQP
+	rm -rf $(OBJDIR) $(LIBDIR) blockSQP

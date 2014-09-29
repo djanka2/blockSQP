@@ -63,8 +63,6 @@ class Matrix
       virtual double &operator()( int i, int j ) const;
       virtual double &operator()( int i );
       virtual double &operator()( int i ) const;
-      //virtual double a( int i, int j ) const;
-      //virtual double a( int i ) const;
 
       Matrix &Dimension( int, int = 1, int = -1 );
       Matrix &Initialize( double (*)( int, int ) );
@@ -103,8 +101,6 @@ class SymMatrix : public Matrix
         virtual double &operator()( int i, int j ) const;
         virtual double &operator()( int i );
         virtual double &operator()( int i ) const;
-        //virtual double a( int i, int j ) const;
-        //virtual double a( int i ) const;
 
         SymMatrix &Dimension( int = 1 );
         SymMatrix &Dimension( int, int, int );

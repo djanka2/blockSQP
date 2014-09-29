@@ -1,5 +1,0 @@
-make clean
-make
-
-cp include/blocksqp_matrix.hpp $VPLANROOT/src/include
-cp include/blocksqp_problemspec.hpp $VPLANROOT/src/include
