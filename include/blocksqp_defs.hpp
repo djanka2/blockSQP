@@ -5,8 +5,7 @@
 #include "math.h"
 #include "stdio.h"
 #include <set>
-#include <limits>
-#include <string>
+
 
 //#define MYDEBUG   ///< Print debug information (impairs performance)
 
@@ -35,9 +34,6 @@
 namespace blockSQP
 {
 
-static double const myInf = std::numeric_limits<double>::infinity();    ///< Used to mark sparse zeros in Jacobian
-
-typedef char NAMESTR[256];
 typedef char PATHSTR[4096];
 
 } // namespace blockSQP

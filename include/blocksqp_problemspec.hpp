@@ -6,7 +6,6 @@
 #ifndef BLOCKSQP_PROBLEMSPEC_HPP
 #define BLOCKSQP_PROBLEMSPEC_HPP
 
-#include "blocksqp_defs.hpp"
 #include "blocksqp_matrix.hpp"
 
 namespace blockSQP
@@ -24,8 +23,8 @@ class Problemspec
         int         nVar;               ///< number of variables
         int         nCon;               ///< number of constraints
         int         nnCon;              ///< number of nonlinear constraints
-        NAMESTR*    varNames;           ///< names of variables
-        NAMESTR*    conNames;           ///< names of constraints
+        char**      varNames;           ///< names of variables
+        char**      conNames;           ///< names of constraints
 
         double      objLo;              ///< lower bound for objective
         double      objUp;              ///< upper bound for objective

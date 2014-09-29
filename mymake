@@ -1,8 +1,5 @@
 make clean
 make
-cp lib/libblockSQP.so $VPLANROOT/lib
 
-cp include/blocksqp.hpp $VPLANROOT/src/include
-cp include/blocksqp_defs.hpp $VPLANROOT/src/include
 cp include/blocksqp_matrix.hpp $VPLANROOT/src/include
 cp include/blocksqp_problemspec.hpp $VPLANROOT/src/include

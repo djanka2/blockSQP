@@ -668,8 +668,8 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP )
     int n, nclin, i, info, iter, ioptns, ios, ibuffer;
     int *istate;
     double obj, *clambda;
-    NAMESTR printfile;
-    NAMESTR buffer;
+    char* printfile;
+    char* buffer;
 
     double *A, *H;
     int ldA, *ldH;

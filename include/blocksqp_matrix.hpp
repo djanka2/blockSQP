@@ -10,10 +10,13 @@
 #ifndef BLOCKSQP_MATRIX_HPP
 #define BLOCKSQP_MATRIX_HPP
 
-#include "blocksqp_defs.hpp"
+#include "stdio.h"
+#include <limits>
 
 namespace blockSQP
 {
+
+static double const myInf = std::numeric_limits<double>::infinity();    ///< Used to mark sparse zeros in Jacobian
 
 /* ----------------------------------------------------------------------- */
 

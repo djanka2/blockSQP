@@ -335,13 +335,13 @@ void SQPstats::finish( Problemspec *prob, SQPiterate *vars )
 }
 
 
-void SQPstats::printCppNull( FILE *outfile, NAMESTR varname )
+void SQPstats::printCppNull( FILE *outfile, char* varname )
 {
     fprintf( outfile, "    double *%s = NULL;\n", varname );
 }
 
 
-void SQPstats::printVectorCpp( FILE *outfile, double *vec, int len, NAMESTR varname )
+void SQPstats::printVectorCpp( FILE *outfile, double *vec, int len, char* varname )
 {
     int i;
 
@@ -358,7 +358,7 @@ void SQPstats::printVectorCpp( FILE *outfile, double *vec, int len, NAMESTR varn
 }
 
 
-void SQPstats::printVectorCpp( FILE *outfile, int *vec, int len, NAMESTR varname )
+void SQPstats::printVectorCpp( FILE *outfile, int *vec, int len, char* varname )
 {
     int i;
 

@@ -1,3 +1,4 @@
+#include "blocksqp.hpp"
 #include "blocksqp_problemspec.hpp"
 
 namespace blockSQP

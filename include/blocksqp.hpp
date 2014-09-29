@@ -210,9 +210,9 @@ class SQPstats
 #ifdef QPSOLVER_QPOASES
         void dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProblem *qp );
 #endif
-        void printVectorCpp( FILE *outfile, double *vec, int len, NAMESTR varname );
-        void printVectorCpp( FILE *outfile, int *vec, int len, NAMESTR varname );
-        void printCppNull( FILE *outfile, NAMESTR varname );
+        void printVectorCpp( FILE *outfile, double *vec, int len, char* varname );
+        void printVectorCpp( FILE *outfile, int *vec, int len, char* varname );
+        void printCppNull( FILE *outfile, char* varname );
         /// Print current (full) Jacobian to Matlab file
         void printJacobian( const Matrix &constrJacFull );
         void printJacobian( int nCon, int nVar, double *jacNz, int *jacIndRow, int *jacIndCol );

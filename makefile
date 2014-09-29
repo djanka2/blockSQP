@@ -1,6 +1,6 @@
 # Makefile for standalone version of blockSQP
 
-QPOASESDIR = /home/tester/qpOASES
+QPOASESDIR = /home/djanka/numerics/qpOASES
 QPOASESINCLUDE = $(QPOASESDIR)/include_aw
 QPOASESLIBDIR = $(QPOASESDIR)/bin
 
@@ -10,18 +10,18 @@ SRCDIR = src
 LIBDIR = lib
 DEFS =
 
-OBJECTS = $(OBJDIR)/blocksqp_general_purpose.o \
+OBJECTS1 = $(OBJDIR)/blocksqp_matrix.o \
+		$(OBJDIR)/blocksqp_problemspec.o
+
+OBJECTS2 = $(OBJDIR)/blocksqp_general_purpose.o \
 		$(OBJDIR)/blocksqp_glob.o \
 		$(OBJDIR)/blocksqp_hess.o \
 		$(OBJDIR)/blocksqp_iter.o \
 		$(OBJDIR)/blocksqp_main.o \
-		$(OBJDIR)/blocksqp_matrix.o \
 		$(OBJDIR)/blocksqp_options.o \
-		$(OBJDIR)/blocksqp_problemspec.o \
 		$(OBJDIR)/blocksqp_qp.o \
 		$(OBJDIR)/blocksqp_restoration.o \
 		$(OBJDIR)/blocksqp_stats.o
-
 
 
 LIBS       = -L $(LIBDIR) -Xlinker -rpath -Xlinker $(LIBDIR) \
@@ -35,11 +35,14 @@ OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprec
 
 all: blockSQP
 
-lib: $(OBJECTS)
-	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS)
+lib: $(OBJECTS1) $(OBJECTS2)
+	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS1) $(OBJECTS2)
 
 blockSQP: lib $(OBJDIR)/blocksqp_driver.o
 	g++ -o blockSQP $(OBJDIR)/blocksqp_driver.o $(LIBS)
+
+min: $(OBJECTS1)
+	g++ -shared -o $(LIBDIR)/libblockSQP_min.so $(OBJECTS1)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	g++ -c $(OPTIONS) -o $@ $<
