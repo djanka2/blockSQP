@@ -1,6 +1,5 @@
 # Makefile for standalone version of blockSQP
 
-QPOASESDIR = /home/djanka/numerics/qpOASES
 QPOASESINCLUDE = $(QPOASESDIR)/include_aw
 QPOASESLIBDIR = $(QPOASESDIR)/bin
 
@@ -35,18 +34,23 @@ OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprec
 
 all: blockSQP
 
-lib: $(OBJECTS1) $(OBJECTS2)
+library: $(OBJECTS1) $(OBJECTS2) | $(LIBDIR)
 	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS1) $(OBJECTS2)
 
-blockSQP: lib $(OBJDIR)/blocksqp_driver.o
+blockSQP: library $(OBJDIR)/blocksqp_driver.o
 	g++ -o blockSQP $(OBJDIR)/blocksqp_driver.o $(LIBS)
 
-min: $(OBJECTS1)
+min: $(OBJECTS1) | $(LIBDIR)
 	g++ -shared -o $(LIBDIR)/libblockSQP_min.so $(OBJECTS1)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
 	g++ -c $(OPTIONS) -o $@ $<
+
+$(LIBDIR):
+	mkdir $(LIBDIR)
+
+$(OBJDIR):
+	mkdir $(OBJDIR)
 
 clean:
 	rm -f $(OBJDIR)/*.o $(LIBDIR)/libblockSQP.so blockSQP
-
