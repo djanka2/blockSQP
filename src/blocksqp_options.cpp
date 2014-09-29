@@ -9,6 +9,11 @@ namespace blockSQP
  */
 SQPoptions::SQPoptions()
 {
+    // 0: no output, 1: normal output, 2: verbose output
+    printLevel = 1;
+    // 1: (some) colorful output
+    printColor = 1;
+
     //eps = 2.2204e-16;
     eps = 1.0e-15;
     inf = 1.0e20;
@@ -74,16 +79,13 @@ SQPoptions::SQPoptions()
     colTau1 = 0.5;
     colTau2 = 1.0e4;
 
-    /*
-     * Magic parameters (mostly from IPOPT paper [Waechter, Biegler 2006])
-     */
     // Filter line search parameters
     gammaTheta = 1.0e-5;
     gammaF = 1.0e-5;
     kappaSOC = 0.99;
     kappaF = 0.999;
-    thetaMax = 1.0e7; // reject steps if constr viol. is larger than thetaMax
-    thetaMin = 1.0e-5; // if constr viol. is smaller than thetaMin require Armijo cond. for obj.
+    thetaMax = 1.0e7;       // reject steps if constr viol. is larger than thetaMax
+    thetaMin = 1.0e-5;      // if constr viol. is smaller than thetaMin require Armijo cond. for obj.
     delta = 1.0;
     sTheta = 1.1;
     sF = 2.3;

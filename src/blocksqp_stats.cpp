@@ -23,7 +23,7 @@ SQPstats::SQPstats( PATHSTR myOutpath )
  * One line of output. If termination criterion was met in the current
  * iteration, return 1, otherwise 0.
  */
-void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, bool hasConverged )
+void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *param, bool hasConverged )
 {
     int i;
     Matrix dummyWeights( 0, 0, 0 );
@@ -39,28 +39,40 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, bool hasConve
 
     if( itCount == 0 )
     {
-        prob->printInfo();
+        if( param->printLevel > 0 )
+        {
+            prob->printInfo();
 
-        // Headline
-        printf("%-8s", "   it" );
-        printf("%-21s", " qpIt" );
-        printf("%-9s","obj" );
-        printf("%-11s","feas" );
-        printf("%-7s","opt" );
-        printf("%-11s","|lgrd|" );
-        printf("%-9s","|stp|" );
-        printf("%-10s","|lstp|" );
-        printf("%-11s","alpha" );
-        printf("%-6s","SOC" );
-        printf("%-18s","sk, da, sca" );
-        printf("%-6s","QPr,mu\n" );
+            // Headline
+            printf("%-8s", "   it" );
+            printf("%-21s", " qpIt" );
+            printf("%-9s","obj" );
+            printf("%-11s","feas" );
+            printf("%-7s","opt" );
+            if( param->printLevel > 1 )
+            {
+                printf("%-11s","|lgrd|" );
+                printf("%-9s","|stp|" );
+                printf("%-10s","|lstp|" );
+            }
+            printf("%-11s","alpha" );
+            if( param->printLevel > 1 )
+            {
+                printf("%-6s","SOC" );
+                printf("%-18s","sk, da, sca" );
+                printf("%-6s","QPr,mu" );
+            }
+            printf("\n");
 
-        // Values for first iteration
-        printf("%5i  ", itCount );
-        printf("%11i ", 0 );
-        printf("% 10e  ", vars->obj );
-        printf("%-10.2e", vars->cNorm );
-        printf("%-10.2e\n", vars->tol );
+            // Values for first iteration
+            printf("%5i  ", itCount );
+            printf("%11i ", 0 );
+            printf("% 10e  ", vars->obj );
+            printf("%-10.2e", vars->cNorm );
+            printf("%-10.2e", vars->tol );
+            printf("\n");
+        }
+
 #ifdef MYDEBUG
         // Print everything in a CSV file as well
         fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
@@ -70,44 +82,60 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, bool hasConve
     else
     {
         // Every twenty iterations print headline
-        if( itCount % 20 == 0 )
+        if( itCount % 20 == 0 && param->printLevel > 0 )
         {
             printf("%-8s", "   it" );
             printf("%-21s", " qpIt" );
             printf("%-9s","obj" );
             printf("%-11s","feas" );
             printf("%-7s","opt" );
-            printf("%-11s","|lgrd|" );
-            printf("%-9s","|stp|" );
-            printf("%-10s","|lstp|" );
+            if( param->printLevel > 1 )
+            {
+                printf("%-11s","|lgrd|" );
+                printf("%-9s","|stp|" );
+                printf("%-10s","|lstp|" );
+            }
             printf("%-11s","alpha" );
-            printf("%-6s","SOC" );
-            printf("%-18s","sk, da, sca" );
-            printf("%-6s","QPr,mu\n" );
+            if( param->printLevel > 1 )
+            {
+                printf("%-6s","SOC" );
+                printf("%-18s","sk, da, sca" );
+                printf("%-6s","QPr,mu" );
+            }
+            printf("\n");
         }
 
         // All values
-        printf("%5i  ", itCount );
-        printf("%5i+%5i ", qpIterations, qpIterations2 );
-        printf("% 10e  ", vars->obj );
-        printf("%-10.2e", vars->cNorm );
-        printf("%-10.2e", vars->tol );
-        printf("%-10.2e", vars->gradNorm );
-        printf("%-10.2e", lInfVectorNorm( vars->deltaXi ) );
-        printf("%-10.2e", vars->lambdaStepNorm );
-        if( vars->alpha == 1.0 && vars->steptype != -1 )
-            printf("%-9.1e", vars->alpha );
-        else
-            //printf("\033[0;36m%-9.1e\033[0m", vars->alpha );
-            printf("%-9.1e", vars->alpha );
-        if( vars->alphaSOC == 0.0 )
-            printf("%-9.1e", vars->alphaSOC );
-        else
-            //printf("\033[0;36m%-9.1e\033[0m", vars->alphaSOC );
-            printf("%-9.1e", vars->alphaSOC );
-        printf("%3i, %3i, %-9.1e", hessSkipped, hessDamped, averageSizingFactor );
-        printf("%i, %-9.1e\n", qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
+        if( param->printLevel > 0 )
+        {
+            printf("%5i  ", itCount );
+            printf("%5i+%5i ", qpIterations, qpIterations2 );
+            printf("% 10e  ", vars->obj );
+            printf("%-10.2e", vars->cNorm );
+            printf("%-10.2e", vars->tol );
+            if( param->printLevel > 1 )
+            {
+                printf("%-10.2e", vars->gradNorm );
+                printf("%-10.2e", lInfVectorNorm( vars->deltaXi ) );
+                printf("%-10.2e", vars->lambdaStepNorm );
+            }
 
+            if( (vars->alpha == 1.0 && vars->steptype != -1) || !param->printColor )
+                printf("%-9.1e", vars->alpha );
+            else
+                printf("\033[0;36m%-9.1e\033[0m", vars->alpha );
+
+            if( param->printLevel > 1 )
+            {
+                if( vars->alphaSOC == 0.0 || !param->printColor )
+                    printf("%-9.1e", vars->alphaSOC );
+                else
+                    printf("\033[0;36m%-9.1e\033[0m", vars->alphaSOC );
+                printf("%3i, %3i, %-9.1e", hessSkipped, hessDamped, averageSizingFactor );
+                printf("%i, %-9.1e", qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
+            }
+            printf("\n");
+        }
 #ifdef MYDEBUG
         // Print everything in a CSV file as well
         fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
@@ -132,9 +160,12 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, bool hasConve
     qpIterations2 = 0;
     qpResolve = 0;
 
-    if( hasConverged && vars->steptype < 2 )
-        //printf("\033[1;32m***CONVERGENCE ACHIEVED!***\n\033[0m");
-        printf("***CONVERGENCE ACHIEVED!***\n");
+    if( param->printLevel > 0 )
+        if( hasConverged && vars->steptype < 2 )
+            if( param->printColor )
+                printf("\033[1;32m***CONVERGENCE ACHIEVED!***\n\033[0m");
+            else
+                printf("***CONVERGENCE ACHIEVED!***\n");
 }
 
 
@@ -310,10 +341,6 @@ void SQPstats::printDebug( Problemspec *prob, SQPiterate *vars )
 #ifdef MYDEBUG
     printPrimalVars( vars->xi );
     printDualVars( vars->lambda );
-#ifdef QPSOLVER_QPOPT
-    printJacobian( vars->constrJac );
-    printHessian( vars->nBlocks, vars->hess );
-#endif
 #endif
 }
 

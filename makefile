@@ -9,10 +9,9 @@ SRCDIR = src
 LIBDIR = lib
 DEFS =
 
-OBJECTS1 = $(OBJDIR)/blocksqp_matrix.o \
-		$(OBJDIR)/blocksqp_problemspec.o
-
-OBJECTS2 = $(OBJDIR)/blocksqp_general_purpose.o \
+OBJECTS = $(OBJDIR)/blocksqp_matrix.o \
+		$(OBJDIR)/blocksqp_problemspec.o \
+		$(OBJDIR)/blocksqp_general_purpose.o \
 		$(OBJDIR)/blocksqp_glob.o \
 		$(OBJDIR)/blocksqp_hess.o \
 		$(OBJDIR)/blocksqp_iter.o \
@@ -34,14 +33,15 @@ OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprec
 
 all: blockSQP
 
-library: $(OBJECTS1) $(OBJECTS2) | $(LIBDIR)
-	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS1) $(OBJECTS2)
+library: $(OBJECTS) | $(LIBDIR)
+	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS)
+	python makemin.py
 
 blockSQP: library $(OBJDIR)/blocksqp_driver.o
 	g++ -o blockSQP $(OBJDIR)/blocksqp_driver.o $(LIBS)
 
-min: $(OBJECTS1) | $(LIBDIR)
-	g++ -shared -o $(LIBDIR)/libblockSQP_min.so $(OBJECTS1)
+min: $(OBJECTS) | $(LIBDIR)
+	g++ -shared -o $(LIBDIR)/libblockSQP_min.so $(OBJECTS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
 	g++ -c $(OPTIONS) -o $@ $<
@@ -53,4 +53,4 @@ $(OBJDIR):
 	mkdir $(OBJDIR)
 
 clean:
-	rm -rf $(OBJDIR) $(LIBDIR) blockSQP
+	rm -rf $(OBJDIR) $(LIBDIR) blockSQP_min blockSQP

@@ -38,9 +38,9 @@ int SQPmethod::init()
     int infoConstr = 0;
     const bool firstCall = 1;
 
-    printf("--------------------------------------------\n");
-    printf("Starting blockSQP for the following problem:\n");
-    printf("--------------------------------------------\n");
+    printf("+-----------------+\n");
+    printf("|Starting blockSQP|\n");
+    printf("+-----------------+\n");
 
     // Open output files
     stats->initStats();
@@ -89,7 +89,7 @@ int SQPmethod::run( int maxIt, int warmStart )
 
         /// Check if converged
         hasConverged = calcOptTol();
-        stats->printProgress( prob, vars, hasConverged );
+        stats->printProgress( prob, vars, param, hasConverged );
         if( hasConverged )
             return 0;
 
@@ -243,7 +243,7 @@ int SQPmethod::run( int maxIt, int warmStart )
         hasConverged = calcOptTol();
 
         /// Print one line of output for the current iteration
-        stats->printProgress( prob, vars, hasConverged );
+        stats->printProgress( prob, vars, param, hasConverged );
         if( hasConverged && vars->steptype < 2 )
         {
             stats->itCount++;

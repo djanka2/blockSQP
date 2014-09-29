@@ -17,6 +17,8 @@ class SQPoptions
      * Variables
      */
     public:
+        int printLevel;
+        int printColor;
         double eps;                         ///< values smaller than this are regarded as numerically zero
         double inf;                         ///< values larger than this are regarded as numerically infinity
         double opttol;                      ///< optimality tolerance
@@ -222,7 +224,7 @@ class SQPstats
         /// Print a sparse Matrix in (column compressed) to a MATLAB readable file
         void printSparseMatlab( FILE *file, int nRow, int nVar, double *nz, int *indRow, int *indCol );
         /// Print one line of output to stdout about the current iteration
-        void printProgress( Problemspec *prob, SQPiterate *vars, bool hasConverged );
+        void printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *param, bool hasConverged );
         /// Must be called before returning from run()
         void finish( Problemspec *prob, SQPiterate *vars );
         /// Save F1 (to be tracked later)
