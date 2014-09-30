@@ -52,4 +52,4 @@ $(OBJDIR):
 	mkdir $(OBJDIR)
 
 clean:
-	rm -rf $(OBJDIR) $(LIBDIR) blockSQP_min blockSQP
+	rm -rf $(OBJDIR) $(LIBDIR) blockSQP

@@ -9,10 +9,11 @@
 # 	blocksqp_matrix.cpp
 # 	blocksqp_problemspec.cpp
 #
-# accordingly and create a makefile to compile these into a library
+# accordingly and create a makefile that compile these into a library
 #
 # 	libblocksqp_min.so
 #
+# Make a tar-file of the whole package and copy to vplan/dist
 import os
 
 incDir = "include/"
@@ -24,7 +25,6 @@ if not os.path.exists(minDir):
 #
 # 1.) CREATE NEW HEADER FILE
 #
-
 # read blocksqp_matrix.hpp
 myFile = open( incDir + "blocksqp_matrix.hpp", "r" )
 matrixLines = myFile.readlines()
@@ -54,7 +54,6 @@ myFile.close()
 #
 # 2.) CREATE NEW CPP FILES
 #
-
 # read blocksqp_matrix.cpp and replace include
 myFile = open( srcDir + "blocksqp_matrix.cpp", "r" )
 lines = myFile.readlines()
@@ -108,6 +107,13 @@ myFile.writelines( "clean:\n" )
 myFile.writelines( "\trm -rf *.o libblockSQP_min.so\n" )
 myFile.close()
 
+
+#
+# 4.) CREATE TAR FILE AND COPY TO vplan/dist
+#
+os.system( "tar -czf  blockSQP_min.tar.gz blockSQP_min/" )
+os.system( "mv blockSQP_min.tar.gz $VPLANROOT/dist" )
+os.system( "rm -rf blockSQP_min" )
 
 
 
