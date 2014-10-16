@@ -250,9 +250,6 @@ void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
     gamma.Submatrix( gammaMat, nVar, 1, 0, 0 );
 
     // Scalars that are used in various Hessian update procedures
-    deltaNorm.Dimension( nBlocks ).Initialize( 1.0 );
-    deltaGamma.Dimension( nBlocks ).Initialize( 0.0 );
-    deltaBdelta.Dimension( nBlocks ).Initialize( 0.0 );
     noUpdateCounter = new int[nBlocks];
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
         noUpdateCounter[iBlock] = -1;
@@ -261,6 +258,7 @@ void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
     deltaNormOld.Dimension( nBlocks ).Initialize( 1.0 );
     deltaGammaOld.Dimension( nBlocks ).Initialize( 0.0 );
 
+    // this is not used at the moment
     updateSequence = new int[param->hessMemsize];
     for( i=0; i<param->hessMemsize; i++ ) updateSequence[i] = 1;
 }

@@ -125,11 +125,8 @@ class SQPiterate
         /*
          * For modified BFGS updates
          */
-        Matrix deltaNorm;                               ///< deltaXi^T deltaXi (nBlocks)
         Matrix deltaNormOld;                            ///< (from previous iteration)
-        Matrix deltaGamma;                              ///< gamma^T deltaXi (nBlocks)
         Matrix deltaGammaOld;                           ///< (from previous iteration)
-        Matrix deltaBdelta;                             ///< deltaXi^T B deltaXi (nBlocks)
         int *noUpdateCounter;                           ///< count skipped updates for each block
         int *updateSequence;                            ///< if mixed updates are used in limited memory context
 
@@ -360,12 +357,12 @@ class SQPmethod
         void updateScalars( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Size Hessian using scaling factor from Nocedal/Wright
         void sizeHessianNocedal( const Matrix &gamma, const Matrix &delta, int iBlock );
+        /// [blockwise] Size Hessian using Oren-Luenberger scaling factor
+        void sizeHessianOL( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Size Hessian using the COL scaling factor
         void sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Size Hessian using the geometric mean of Nocedal and OL
         void sizeHessianMean( const Matrix &gamma, const Matrix &delta, int iBlock );
-        /// [blockwise] Compute COL sizing factor
-        double sizingFactor( double theta, int iBlock );
         /// [blockwise] Compute initial scaling for L-SR1 matrix
         int sizeHessianByrdLu( const Matrix &gammaMat, const Matrix &deltaMat, int iBlock );
 };
