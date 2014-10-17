@@ -107,7 +107,9 @@ class SQPiterate
 
         int nBlocks;                                    ///< number of diagonal blocks in Hessian
         int *blockIdx;                                  ///< indices in the variable vector that correspond to diagonal blocks (nBlocks+1)
-        SymMatrix *hess;                                ///< [blockwise] Hessian of the Lagrangian
+        SymMatrix *hess;                                ///< [blockwise] pointer to Hessian of the Lagrangian
+        SymMatrix *hess1;                               ///< [blockwise] first Hessian approximation
+        SymMatrix *hess2;                               ///< [blockwise] second Hessian approximation
         double *hessNz;                                 ///< nonzero elements of Hessian (length)
         int *hessIndRow;                                ///< row indices (length)
         int *hessIndCol;                                ///< indices to first entry of columns (nCols+1)

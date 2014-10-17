@@ -57,10 +57,12 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
     hessIndRow = NULL;
     hessIndLo = NULL;
     hess = NULL;
+    hess1 = NULL;
+    hess2 = NULL;
 
     if( full )
     {
-        allocHess();
+        allocHess( param );
         allocAlg( prob, param );
     }
 }
@@ -124,18 +126,31 @@ void SQPiterate::allocMin( Problemspec *prob )
 }
 
 
-void SQPiterate::allocHess()
+void SQPiterate::allocHess( SQPoptions *param )
 {
     int iBlock, varDim;
 
     // Create one Matrix for one diagonal block in the Hessian
-    hess = new SymMatrix[nBlocks];
+    hess1 = new SymMatrix[nBlocks];
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
     {
         varDim = blockIdx[iBlock+1] - blockIdx[iBlock];
-        hess[iBlock].Dimension( varDim ).Initialize( 0.0 );
+        hess1[iBlock].Dimension( varDim ).Initialize( 0.0 );
     }
 
+    // For full-memory SR1, we need to maintain to Hessians
+    if( param->hessUpdate == 1 && !param->hessLimMem )
+    {
+        hess2 = new SymMatrix[nBlocks];
+        for( iBlock=0; iBlock<nBlocks; iBlock++ )
+        {
+            varDim = blockIdx[iBlock+1] - blockIdx[iBlock];
+            hess2[iBlock].Dimension( varDim ).Initialize( 0.0 );
+        }
+    }
+
+    // Set Hessian pointer
+    hess = hess1;
 }
 
 
