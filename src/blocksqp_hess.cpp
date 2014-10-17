@@ -211,10 +211,11 @@ void SQPmethod::sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int 
     else
         theta = fmin( param->colTau1, param->colTau2 * deltaNorm );
     if( deltaNorm > myEps && vars->deltaNormOld(iBlock) > myEps )
-        scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*deltaGamma / deltaNorm ) /
-            ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*deltaBdelta / deltaNorm );
-        //if( (scale = (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaBdelta(iBlock) / vars->deltaNorm(iBlock)) > myEps )
-            //scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*vars->deltaGamma(iBlock) / vars->deltaNorm(iBlock) ) / scale;
+    {
+        scale = (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*deltaBdelta / deltaNorm;
+        if( scale > param->eps )
+            scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*deltaGamma / deltaNorm ) / scale;
+    }
     else
         scale = 1.0;
 
