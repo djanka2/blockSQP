@@ -127,43 +127,37 @@ int SQPmethod::calcFiniteDiffHessian()
 void SQPmethod::sizeHessianNocedal( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j;
-    double value1, value2, value3;
+    double scale;
     double myEps = 1.0e2 * param->eps;
 
-    value1 = adotb( gamma, gamma );
-    value2 = adotb( delta, gamma );
-    if( value2 > 0.0 )
+    scale = adotb( delta, gamma );
+    if( scale > 0.0 )
     {
-        value2 = fmax( value2, myEps );
-        value3 = value1 / value2;
-
+        scale = adotb( gamma, gamma ) / fmax( scale, myEps );
         for( i=0; i<vars->hess[iBlock].M(); i++ )
             for( j=i; j<vars->hess[iBlock].M(); j++ )
-                vars->hess[iBlock]( i,j ) *= value3;
+                vars->hess[iBlock]( i,j ) *= scale;
     }
     else
-        value3 = 1.0;
+        scale = 1.0;
 
     // statistics: average sizing factor
-    stats->averageSizingFactor += value3;
+    stats->averageSizingFactor += scale;
 }
 
 void SQPmethod::sizeHessianMean( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j;
-    double value1, value2, value3;
+    double scale;
     double myEps = 1.0e2 * param->eps;
 
-    value1 = adotb( gamma, gamma );
-    value2 = fmax( adotb( delta, delta ), myEps );
-    value3 = sqrt( value1 / value2 );
-
+    scale = sqrt( adotb( gamma, gamma ) / fmax( adotb( delta, delta ), myEps ) );
     for( i=0; i<vars->hess[iBlock].M(); i++ )
         for( j=i; j<vars->hess[iBlock].M(); j++ )
-            vars->hess[iBlock]( i,j ) *= value3;
+            vars->hess[iBlock]( i,j ) *= scale;
 
     // statistics: average sizing factor
-    stats->averageSizingFactor += value3;
+    stats->averageSizingFactor += scale;
 }
 
 void SQPmethod::sizeHessianOL( const Matrix &gamma, const Matrix &delta, int iBlock )
@@ -177,17 +171,20 @@ void SQPmethod::sizeHessianOL( const Matrix &gamma, const Matrix &delta, int iBl
     value1 = adotb( gamma, delta );
     value2 = adotb( delta, delta );
 
-    /// \todo still has the form from COL sizing, should look like Nocedal and Mean after computations are done!
-    /// (maybe put them into one function)
+    /// \todo still has the form from COL sizing with all the safeguards. Should look like Nocedal
+    /// and Mean after computations are done! (maybe put them into one function)
     if( value2 > myEps )
         value3 = value1 / value2;
     else
         value3 = 1.0;
 
     if( value3 > 0.0 && value3 < 1.0 )
+    {
+        value3 = fmax( param->colEps, value3 );
         for( i=0; i<vars->hess[iBlock].M(); i++ )
             for( j=i; j<vars->hess[iBlock].M(); j++ )
                 vars->hess[iBlock]( i,j ) *= value3;
+    }
     else
         value3 = 1.0;
 
@@ -209,7 +206,10 @@ void SQPmethod::sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int 
             deltaBdelta += delta( i ) * vars->hess[iBlock]( i, j ) * delta( j );
 
     // Centered Oren-Luenberger factor
-    theta = fmin( param->colTau1, param->colTau2 * deltaNorm );
+    if( vars->noUpdateCounter[iBlock] == -1 ) // in the first iteration, this should equal the OL factor
+        theta = 1.0;
+    else
+        theta = fmin( param->colTau1, param->colTau2 * deltaNorm );
     if( deltaNorm > myEps && vars->deltaNormOld(iBlock) > myEps )
         scale = ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*deltaGamma / deltaNorm ) /
             ( (1.0 - theta)*vars->deltaGammaOld(iBlock) / vars->deltaNormOld(iBlock) + theta*deltaBdelta / deltaNorm );
@@ -262,8 +262,7 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
     {
         nVarLocal = vars->hess[iBlock].M();
 
-        // smallGamma and smallDelta are either subvectors of gamma and delta
-        // or submatrices of gammaMat, deltaMat, i.e. subvectors of gamma and delta from m prev. iterations (for L-BFGS)
+        // smallGamma and smallDelta are subvectors of gamma and delta, corresponding to partially separability
         smallGamma.Submatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
         smallDelta.Submatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
 
@@ -280,8 +279,7 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
         else if( hessScaling == 4 )
             sizeHessianTapia( smallGamma, smallDelta, iBlock );
 
-
-        // Computing the new update (sum up skipped updates)
+        // Compute the new update
         if( updateType == 1 )
             calcSR1( smallGamma, smallDelta, iBlock );
         else if( updateType == 2 )
@@ -471,8 +469,8 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
     {
         nVarLocal = vars->hess[iBlock].M();
 
-        // smallGamma and smallDelta are either subvectors of gamma and delta
-        // or submatrices of gammaMat, deltaMat, i.e. subvectors of gamma and delta from m prev. iterations (for L-BFGS)
+        // smallGamma and smallDelta are submatrices of gammaMat, deltaMat,
+        // i.e. subvectors of gamma and delta from m prev. iterations
         smallGamma.Submatrix( vars->gammaMat, nVarLocal, vars->gammaMat.N(), vars->blockIdx[iBlock], 0 );
         smallDelta.Submatrix( vars->deltaMat, nVarLocal, vars->deltaMat.N(), vars->blockIdx[iBlock], 0 );
 
@@ -494,12 +492,19 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
         calcInitialHessian( iBlock );
         vars->deltaNormOld( iBlock ) = 1.0;
         vars->deltaGammaOld( iBlock ) = 0.0;
-        vars->noUpdateCounter[iBlock] = 0;
+        vars->noUpdateCounter[iBlock] = -1;
 
-        bool scaleAgain = false;
-        if( hessScaling == 5 )
-            if( sizeHessianByrdLu( smallGamma, smallDelta, iBlock ) )
-                scaleAgain = true;
+        // Size the initial update, but with the most recent delta/gamma-pair
+        gammai.Submatrix( smallGamma, nVarLocal, 1, 0, posNewest );
+        deltai.Submatrix( smallDelta, nVarLocal, 1, 0, posNewest );
+        if( hessScaling == 1 )
+            sizeHessianNocedal( gammai, deltai, iBlock );
+        else if( hessScaling == 2 )
+            sizeHessianOL( gammai, deltai, iBlock );
+        else if( hessScaling == 3 )
+            sizeHessianMean( gammai, deltai, iBlock );
+        else if( hessScaling == 5 )
+            sizeHessianByrdLu( smallGamma, smallDelta, iBlock );
 
         for( i=0; i<m; i++ )
         {
@@ -514,17 +519,11 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
             hessDamped = stats->hessDamped;
             hessSkipped = stats->hessSkipped;
 
-            // Sizing before the update
-            if( hessScaling == 1 && i == 0 )
-                sizeHessianNocedal( gammai, deltai, iBlock );
-            else if( hessScaling == 2 && i== 0 )
-                sizeHessianOL( gammai, deltai, iBlock );
-            else if( (hessScaling == 3 ||scaleAgain) && i == 0)
-                sizeHessianMean( gammai, deltai, iBlock );
-            else if( hessScaling == 4 )
+            // Selective sizing before the update
+            if( hessScaling == 4 )
                 sizeHessianTapia( gammai, deltai, iBlock );
 
-            // Computing the new update
+            // Compute the new update
             if( updateType == 1 && vars->updateSequence[pos] == 1 )
                 calcSR1( gammai, deltai, iBlock );
             else if( updateType == 1 && vars->updateSequence[pos] == 2 )
@@ -545,6 +544,7 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
         // Convex combination between SR1 and scaled identity
         if( updateType == 1 && mu > 0.0 )
         {
+            const double myEps = 1.0e2 * param->eps;
             const double fac1 = 1.0 - mu;
             double fac2;
 
@@ -553,11 +553,11 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
                 for( j=i; j<vars->hess[iBlock].M(); j++ )
                     vars->hess[iBlock]( i,j ) *= fac1;
 
-            //fac2 = sizingFactor( 0.5, iBlock );
-            //if( fac2 < 1.0 && fac2 > 0.0 )
-                //fac2 = mu * fmax( param->colEps, fac2 );
-            //else
-                fac2 = mu;
+            fac2 = adotb( deltai, gammai );
+            if( fac2 > 0.0 )
+                fac2 = adotb( gammai, gammai ) / fmax( fac2, myEps );
+            else
+                fac2 = 1.0;
 
             for( i=0; i<vars->hess[iBlock].M(); i++ )
                 vars->hess[iBlock]( i,i ) += fac2;
