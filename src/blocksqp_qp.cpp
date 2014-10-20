@@ -189,32 +189,43 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
 
         /* 2.) New Hessian: (1-mu)*H_SR1 + mu*H_BFGS */
         // fallback: damped BFGS update
-        stats->itCount--;
-        hessDampSave = param->hessDamp;
-        param->hessDamp = 1;
-        calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
-        param->hessDamp = hessDampSave;
-        stats->itCount++;
 
-        if( iQP != maxQP-1 )
+        // Limited memory: call update routine again, completely rebuild Hessian
+        if( param->hessLimMem )
         {
-            // Store BFGS Hessian
-            SymMatrix hessSave[vars->nBlocks];
-            for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
-                hessSave[iBlock] = SymMatrix( vars->hess[iBlock] );
-
-            // SR1 update
             stats->itCount--;
-            calcHessianUpdateLimitedMemory( param->hessUpdate, param->hessScaling );
+            hessDampSave = param->hessDamp;
+            param->hessDamp = 1;
+            calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
+            param->hessDamp = hessDampSave;
             stats->itCount++;
 
-            // Combine both
-            int i, j;
-            for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
-                for( i=0; i<vars->hess[iBlock].M(); i++ )
-                    for( j=i; j<vars->hess[iBlock].N(); j++ )
-                        vars->hess[iBlock]( i, j ) = mu2*vars->hess[iBlock]( i, j ) +
-                                                     mu1*hessSave[iBlock]( i, j );
+            if( iQP != maxQP-1 )
+            {
+                // Store BFGS Hessian
+                SymMatrix hessSave[vars->nBlocks];
+                for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+                    hessSave[iBlock] = SymMatrix( vars->hess[iBlock] );
+
+                // SR1 update
+                stats->itCount--;
+                calcHessianUpdateLimitedMemory( param->hessUpdate, param->hessScaling );
+                stats->itCount++;
+
+                // Combine both
+                int i, j;
+                for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+                    for( i=0; i<vars->hess[iBlock].M(); i++ )
+                        for( j=i; j<vars->hess[iBlock].N(); j++ )
+                            vars->hess[iBlock]( i, j ) = mu2*vars->hess[iBlock]( i, j ) +
+                                                         mu1*hessSave[iBlock]( i, j );
+            }
+        }
+        else
+        { // Full memory: set hess pointer to hess2, update is automatically maintained
+
+            /// \todo convex combination is not yet implemented for the full memory case!
+            vars->hess = vars->hess2;
         }
 
         // Convert Hessian to sparse format
@@ -243,6 +254,10 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         else
             stats->qpIterations = maxIt + 1;
         stats->qpResolve++;
+
+        // Reset pointer to SR1 matrix
+        if( !param->hessLimMem )
+            vars->hess = vars->hess1;
 
         // Last Hessian is positive definite by construction, don't need to test
         if( iQP != maxQP-1 )

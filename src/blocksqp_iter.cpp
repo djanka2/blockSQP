@@ -138,7 +138,7 @@ void SQPiterate::allocHess( SQPoptions *param )
         hess1[iBlock].Dimension( varDim ).Initialize( 0.0 );
     }
 
-    // For full-memory SR1, we need to maintain to Hessians
+    // For full-memory SR1, we need to maintain two Hessians
     if( param->hessUpdate == 1 && !param->hessLimMem )
     {
         hess2 = new SymMatrix[nBlocks];
@@ -269,8 +269,10 @@ void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
         noUpdateCounter[iBlock] = -1;
 
-    // For modified BFGS Updates: for each block save delta^T delta and gamma^T delta
+    // For selective sizing: for each block save sTs, sTs_, sTy, sTy_
+    deltaNorm.Dimension( nBlocks ).Initialize( 1.0 );
     deltaNormOld.Dimension( nBlocks ).Initialize( 1.0 );
+    deltaGamma.Dimension( nBlocks ).Initialize( 0.0 );
     deltaGammaOld.Dimension( nBlocks ).Initialize( 0.0 );
 
     // this is not used at the moment

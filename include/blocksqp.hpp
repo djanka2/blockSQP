@@ -127,7 +127,9 @@ class SQPiterate
         /*
          * For modified BFGS updates
          */
+        Matrix deltaNorm;                               ///< sTs
         Matrix deltaNormOld;                            ///< (from previous iteration)
+        Matrix deltaGamma;                              ///< sTy
         Matrix deltaGammaOld;                           ///< (from previous iteration)
         int *noUpdateCounter;                           ///< count skipped updates for each block
         int *updateSequence;                            ///< if mixed updates are used in limited memory context
@@ -155,7 +157,7 @@ class SQPiterate
         /// Allocate space for Jacobian
         void allocJac( Problemspec *prob );
         /// Allocate diagonal block Hessian
-        void allocHess();
+        void allocHess( SQPoptions* param );
         /// Convert *hess to column compressed sparse format
         void convertHessian( Problemspec *prob );
         void convertHessian( Problemspec *prob, bool firstCall );
