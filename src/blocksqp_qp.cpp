@@ -32,7 +32,8 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     // set options for qpOASES
     opts.enableInertiaCorrection = qpOASES::BT_TRUE;
     opts.enableEqualities = qpOASES::BT_TRUE;
-    opts.initialStatusBounds = qpOASES::ST_UPPER;
+    //opts.initialStatusBounds = qpOASES::ST_UPPER;
+    opts.initialStatusBounds = qpOASES::ST_INACTIVE;
     opts.printLevel = qpOASES::PL_NONE;
     opts.numRefinementSteps = 2;
     opts.epsLITests =  2.2204e-08;

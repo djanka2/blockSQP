@@ -142,6 +142,9 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
                  vars->obj, vars->cNorm, vars->tol, vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
                  vars->lambdaStepNorm, vars->alpha, vars->alphaSOC, hessSkipped, hessDamped, averageSizingFactor,
                  qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
+
+        // Print update sequence
+        fprintf( updateFile, "%i\t", qpResolve );
 #endif
     }
 
@@ -181,6 +184,10 @@ void SQPstats::initStats()
     strcat( filename, "sqpits.csv" );
     progressFile = fopen( filename, "w");
 
+    // Update sequence
+    strcpy( filename, outpath );
+    strcat( filename, "updatesequence.txt" );
+    updateFile = fopen( filename, "w" );
 
     // Primal variables
     strcpy( filename, outpath );
@@ -354,6 +361,8 @@ void SQPstats::finish( Problemspec *prob, SQPiterate *vars )
     printDebug( prob, vars );
     fprintf( progressFile, "\n" );
     fclose( progressFile );
+    fprintf( updateFile, "\n" );
+    fclose( updateFile );
     fprintf( primalVarsFile, "];\n" );
     fclose( primalVarsFile );
     fprintf( dualVarsFile, "];\n" );

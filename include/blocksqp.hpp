@@ -190,6 +190,7 @@ class SQPstats
         PATHSTR outpath;                                ///< path where log files are stored
 
         FILE *progressFile;                             ///< save stats for each SQP step
+        FILE *updateFile;                               ///< print update sequence (SR1/BFGS) to file
         FILE *primalVarsFile;                           ///< primal variables for every SQP iteration
         FILE *dualVarsFile;                             ///< dual variables for every SQP iteration
         FILE *jacFile;                                  ///< Jacobian of one iteration
