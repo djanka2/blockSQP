@@ -32,8 +32,10 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     // set options for qpOASES
     opts.enableInertiaCorrection = qpOASES::BT_TRUE;
     opts.enableEqualities = qpOASES::BT_TRUE;
-    opts.initialStatusBounds = qpOASES::ST_UPPER;
+    //opts.initialStatusBounds = qpOASES::ST_LOWER;
+    opts.initialStatusBounds = qpOASES::ST_INACTIVE;
     opts.printLevel = qpOASES::PL_NONE;
+    //opts.printLevel = qpOASES::PL_HIGH;
     opts.numRefinementSteps = 2;
     opts.epsLITests =  2.2204e-08;
     cpuTime = 10000.0;
@@ -99,7 +101,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     {
         if( flag == 0 )
             ret = qp->hotstart( H, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
-        else if( flag == 1 )
+        else if( flag == 1 ) // Second order correction: H and A do not change
             ret = qp->hotstart( vars->gradObj.ARRAY(), lb, lu, lbA, luA, maxIt, &cpuTime );
     }
     else
@@ -238,7 +240,7 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         #endif
 
         // Solve QP: Warmstart with the last successfully solved QP
-        maxIt = 3000;
+        maxIt = 5000;
         cpuTime = 10000.0;
         *qp = qpSave;
         if( iQP == maxQP-1 )

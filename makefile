@@ -1,6 +1,6 @@
 # Makefile for standalone version of blockSQP
 
-QPOASESINCLUDE = $(QPOASESDIR)/include_aw
+QPOASESINCLUDE = $(QPOASESDIR)/include
 QPOASESLIBDIR = $(QPOASESDIR)/bin
 
 OBJDIR = obj
@@ -26,7 +26,7 @@ LIBS       = -L $(LIBDIR) -Xlinker -rpath -Xlinker $(LIBDIR) \
              -L $(QPOASESLIBDIR) -Xlinker -rpath -Xlinker $(QPOASESLIBDIR) \
              -L /usr/local/lib -Xlinker -rpath -Xlinker /usr/local/lib \
              -lblockSQP \
-             -lqpOASES_aw \
+             -lqpOASES \
              -llapack
 
 OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprecated -Wno-write-strings
