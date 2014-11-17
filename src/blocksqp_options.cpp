@@ -10,7 +10,7 @@ namespace blockSQP
 SQPoptions::SQPoptions()
 {
     // 0: no output, 1: normal output, 2: verbose output
-    printLevel = 1;
+    printLevel = 2;
     // 1: (some) colorful output
     printColor = 1;
 
