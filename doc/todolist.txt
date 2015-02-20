@@ -1,3 +1,15 @@
+TODO for Diss
+=============
+- Termination criterion, scale feasibility with (1+||x||)**(-1)
+- Revise SOCS loop: alphaSOC is not really the stepsize, we have to change the right-hand side
+  for additional second-order corrections. Probably need to call updateStepBounds() for next SOCS QP.
+  Does this interfere with main line search loop?
+- L2 restoration phase
+- Finite difference Hessian
+- Parallelization of QP solution
+- Greenstadt, PSB, DFP updates
+
+
 Tuning of SQP method
 ====================
 - First SQP step: right now we take the identity without globalization, that could end badly
@@ -7,7 +19,6 @@ Tuning of SQP method
 Additional Features of SQP method
 =================================
 - Feasibility restoration phase: minimizes L_1 constraint violation but we want L_inf constraint violation! This doesn't fit together and yields points that do not improve constraint violation...
-
-- read in options from ini file or other text file
 - Warm start and cold start feature: read in primal and dual variables (for cold start) and additionally Hessian approximation, active set and current filter (for warm starts) from text files (or binary files)
 - print information about the current SQP options
+

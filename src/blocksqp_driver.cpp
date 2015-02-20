@@ -209,20 +209,29 @@ void MyProblem::evaluate( const Matrix &xi, const Matrix &lambda, double *objval
                           int dmode, int *info )
 {
     *info = 0;
+    int i;
 
     if( dmode >= 0 )
     {
-        *objval = xi(0)*xi(0) - 0.5*xi(1)*xi(1);
-        constr( 0 ) = xi(0) - xi(1);
+        *objval = xi(0)*xi(0);
+        for( i=1; i<nVar; i++ )
+            *objval -= i * 0.5*xi(i)*xi(i);
+
+        for( i=1; i<nVar; i++ )
+            constr( i-1 ) = xi(0) - sqrt(i*(nVar-1))*xi(i);
     }
 
     if( dmode > 0 )
     {
         gradObj( 0 ) = 2.0 * xi(0);
-        gradObj( 1 ) = - xi(1);
+        for( i=1; i<nVar; i++ )
+            gradObj( i ) = - i * xi(i);
 
-        constrJac( 0, 0 ) = 1.0;
-        constrJac( 0, 1 ) = -1.0;
+        for( i=1; i<nVar; i++ )
+        {
+            constrJac( i-1, 0 ) = 1.0;
+            constrJac( i-1, i ) = - sqrt(i*(nVar-1));
+        }
     }
 }
 
@@ -244,14 +253,16 @@ int main( int argc, const char* argv[] )
     /* Setup problem data */
     /*--------------------*/
 
-    int nVar = 2;
-    int nCon = 1;
+    int nVar = 5;
+
+    int nCon = nVar-1;
 
     // Initial values
     Matrix x0;
     x0.Dimension( nVar );
     x0( 0 ) = 10.0;
-    x0( 1 ) = 10.0;
+    for( int i=1; i<nVar; i++ )
+        x0( i ) = x0( 0 ) * sqrt(i*(nVar-1));
 
     // Variable bounds
     Matrix bl, bu;
@@ -259,14 +270,16 @@ int main( int argc, const char* argv[] )
     bu.Dimension( nVar+nCon ).Initialize( myInf );
 
     // Constraint bounds
-    bl( nVar ) = bu( nVar ) = 0.0;
+    for( int i=nVar; i<nVar+nCon; i++ )
+    {
+        bl( i ) = bu( i ) = 0.0;
+    }
 
     // Variable partition for block Hessian
-    int nBlocks = 2;
+    int nBlocks = nVar;
     int blockIdx[nBlocks+1];
-    blockIdx[0] = 0;
-    blockIdx[1] = 1;
-    blockIdx[2] = nVar;
+    for( int i=0; i<nBlocks+1; i++ )
+        blockIdx[i] = i;
 
     // Create problem evaluation object
     prob = new MyProblem( nVar, nCon, nBlocks, blockIdx, bl, bu, x0 );
@@ -277,13 +290,13 @@ int main( int argc, const char* argv[] )
     /*------------------------*/
 
     opts = new SQPoptions();
-    opts->opttol = 1.0e-12;
-    opts->nlinfeastol = 1.0e-12;
+    opts->opttol = 1.0e-10;
+    opts->nlinfeastol = 1.0e-10;
 
     // 0: no globalization, 1: filter line search
     opts->globalization = 0;
     // 0: (scaled) identity, 1: SR1, 2: BFGS
-    opts->hessUpdate = 2;
+    opts->hessUpdate = 1;
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: scale initial Hessian with geometric mean of 1 and 2
     // 4: scale Hessian in every step with centered Oren-Luenberger sizing according to Tapia paper

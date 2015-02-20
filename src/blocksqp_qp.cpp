@@ -85,7 +85,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     luA = vars->deltaBu.ARRAY() + prob->nVar;
 
 #ifdef MYDEBUG
-    //stats->dumpQPCpp( prob, vars, qp );
+    stats->dumpQPCpp( prob, vars, qp );
 #endif
 
     /// \todo For now: just duplicate the whole qp object (we probably only need the active set)
@@ -236,7 +236,7 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
                                        vars->hessIndCol, vars->hessNz, vars->hessIndLo );
 
         #ifdef MYDEBUG
-        //stats->dumpQPCpp( prob, vars, qp );
+        stats->dumpQPCpp( prob, vars, qp );
         #endif
 
         // Solve QP: Warmstart with the last successfully solved QP
@@ -326,7 +326,7 @@ qpOASES::returnValue SQPmethod::postprocessQP_Id( qpOASES::returnValue ret, Matr
         //printf("deltaH = %23.16e\n", deltaH );
 
         #ifdef MYDEBUG
-        //stats->dumpQPCpp( prob, vars, qp );
+        stats->dumpQPCpp( prob, vars, qp );
         #endif
 
         // Solve QP

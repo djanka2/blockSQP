@@ -7,7 +7,7 @@
 #include <set>
 
 
-//#define MYDEBUG   ///< Print debug information (impairs performance)
+#define MYDEBUG   ///< Print debug information (impairs performance)
 
 // Choice of QP solver
 //#define QPSOLVER_QPOPT
