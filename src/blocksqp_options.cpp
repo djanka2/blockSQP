@@ -26,7 +26,7 @@ SQPoptions::SQPoptions()
     globalization = 1;
 
     // 0: no feasibility restoration phase 1: if line search fails, start feasibility restoration phase
-    restoreFeas = 0;
+    restoreFeas = 1;
 
     // 0: globalization is always active, 1: take a full step at first SQP iteration, no matter what
     skipFirstGlobalization = false;
@@ -39,7 +39,7 @@ SQPoptions::SQPoptions()
 
     // for which blocks should second derivatives be provided by the user:
     // 0: none, 1: for the last block, 2: for all blocks
-    whichSecondDerv = 0;
+    whichSecondDerv = 1;
 
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: geometric mean of 1 and 2

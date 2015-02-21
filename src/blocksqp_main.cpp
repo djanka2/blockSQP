@@ -229,12 +229,6 @@ int SQPmethod::run( int maxIt, int warmStart )
                 vars->steptype = 0;
         }
 
-        if( stats->itCount == 3 )
-        {
-            printf("HERE\n");
-            feasibilityRestorationPhase();
-        }
-
         /// Calculate "old" Lagrange gradient: gamma = dL(xi_k, lambda_k+1)
         calcLagrangeGradient( vars->gamma, 0 );
 

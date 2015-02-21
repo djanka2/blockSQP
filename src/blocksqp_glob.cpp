@@ -349,11 +349,11 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
 int SQPmethod::feasibilityRestorationPhase()
 {
     // No Feasibility restoration phase
-    //if( param->restoreFeas == 0 )
-        //return -1;
+    if( param->restoreFeas == 0 )
+        return -1;
 
     int ret, it, i, k, info;
-    int maxFeasRestIt = 100;
+    int maxRestIt = 100;
     int warmStart;
     double cNormTrial, objTrial, lStpNorm;
     Matrix dummy2;
@@ -362,15 +362,6 @@ int SQPmethod::feasibilityRestorationPhase()
     SQPmethod *restMethod;
     SQPoptions *restOpts;
     SQPstats *restStats;
-
-
-    /* constr might contain constraint evaluations of a trialXi and might therefore not be compatible with xi.
-     * possibilities:
-     * 1.) introduce trialConstr and use like trialXi
-     * 2.) use trialXi and start restoration phase from there, although trialXi might be a "bad" point
-     * 3.) (used here) additional constraint evaluation just to make sure everything is in the desired state
-     */
-    prob->evaluate( vars->xi, &objTrial, vars->constr, &info );
 
     // Create a min(constrVio) NLP, an options and a stats object
     restProb = new RestorationProblem( prob, vars->xi );
@@ -391,7 +382,7 @@ int SQPmethod::feasibilityRestorationPhase()
 
     // Iterate until a point acceptable to the filter is found
     warmStart = 0;
-    for( it=0; it<maxFeasRestIt; it++ )
+    for( it=0; it<maxRestIt; it++ )
     {
         // One iteration for minimum norm NLP
         ret = restMethod->run( 1, warmStart );
@@ -412,9 +403,7 @@ int SQPmethod::feasibilityRestorationPhase()
             continue;
 
         // Is this iterate acceptable for the filter?
-        //if( !pairInFilter( cNormTrial, objTrial ) )
-        /// \todo  it is NOT guaranteed at all that min ||cNorm||_1 yields an acceptable point for ||cNorm||_inf ...
-        if( cNormTrial < vars->cNorm )
+        if( !pairInFilter( cNormTrial, objTrial ) )
         {
             // success
             printf("Found a point acceptable for the filter.\n");
