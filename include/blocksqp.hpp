@@ -85,6 +85,7 @@ class SQPiterate
         double obj;                                     ///< objective value
         double qpObj;                                   ///< objective value of last QP subproblem
         double cNorm;                                   ///< constraint violation
+        double cNormS;                                  ///< scaled constraint violation
         double gradNorm;                                ///< norm of Lagrangian gradient
         double lambdaStepNorm;                          ///< norm of step in dual variables
         double tol;                                     ///< current optimality tolerance
@@ -139,7 +140,7 @@ class SQPiterate
          */
         int steptype;                                   ///< is current step a restoration step (1)?
         double alpha;                                   ///< stepsize for line search
-        double alphaSOC;                                ///< stepsize for second order correction
+        int nSOCS;                                      ///< number of second-order correction steps
         int reducedStepCount;                           ///< count number of consecutive reduced steps,
         Matrix deltaH;                                  ///< scalars for inertia correction (filter line search w indef Hessian)
         Matrix trialXi;                                 ///< new trial iterate (for line search)
@@ -306,9 +307,9 @@ class SQPmethod
         /// No globalization strategy
         int fullstep();
         /// Set new primal dual iterate
-        void acceptStep( const Matrix &deltaXi, const Matrix &lambdaQP, double alpha, double alphaSOC );
+        void acceptStep( const Matrix &deltaXi, const Matrix &lambdaQP, double alpha, int nSOCS );
         /// Overloaded function for convenience, uses current variables of SQPiterate vars
-        void acceptStep( double alpha, double alphaSOC );
+        void acceptStep( double alpha );
         /// Reduce stepsize if a step is rejected
         void reduceStepsize( double *alpha );
         /// Determine steplength alpha by a filter based line search similar to IPOPT

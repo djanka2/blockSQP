@@ -71,8 +71,8 @@ SQPoptions::SQPoptions()
     // if step has to be reduced in too many consecutive iterations, feasibility restoration phase is invoked
     maxConsecReducedSteps = 100;
 
-    // maximum number of SOC line search iterations
-    maxSOCiter = 2;
+    // maximum number of second-order correction steps
+    maxSOCiter = 3;
 
     // Oren-Luenberger scaling parameters
     colEps = 0.1;

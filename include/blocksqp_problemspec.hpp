@@ -90,7 +90,6 @@ class RestorationProblem : public Problemspec
     public:
         Problemspec *parent;
         Matrix xiRef;
-        Matrix constrRef;
         Matrix diagScale;
         int neq;
         bool *isEqCon;
@@ -102,7 +101,7 @@ class RestorationProblem : public Problemspec
      * METHODS
      */
     public:
-        RestorationProblem( Problemspec *parent, const Matrix &xiReference, const Matrix &constrReference );
+        RestorationProblem( Problemspec *parent, const Matrix &xiReference );
 
         /// Set initial values for xi and lambda, may also set matrix for linear constraints (dense version)
         virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac );
@@ -124,10 +123,6 @@ class RestorationProblem : public Problemspec
 
         virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow,
                                       int *&jacIndCol, bool firstCall = 0 );
-
-        virtual void evalObjective( const Matrix &xi, double *objval,
-                                    Matrix &gradObj, SymMatrix *&hess,
-                                    int dmode, int *info );
 
         virtual void printInfo();
         virtual void printVariables( const Matrix &xi, const Matrix &lambda, int verbose );

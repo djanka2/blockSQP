@@ -229,6 +229,12 @@ int SQPmethod::run( int maxIt, int warmStart )
                 vars->steptype = 0;
         }
 
+        if( stats->itCount == 3 )
+        {
+            printf("HERE\n");
+            feasibilityRestorationPhase();
+        }
+
         /// Calculate "old" Lagrange gradient: gamma = dL(xi_k, lambda_k+1)
         calcLagrangeGradient( vars->gamma, 0 );
 
@@ -375,9 +381,8 @@ bool SQPmethod::calcOptTol()
     vars->tol = vars->gradNorm /( 1.0 + lInfVectorNorm( vars->lambda ) );
 
     // norm of constraint violation
-    /// \todo has to be scaled/weighted somehow
     vars->cNorm  = lInfConstraintNorm( vars->xi, vars->constr, prob->bu, prob->bl );
-    /// \todo complementarity norm constr*lambda? ->Dolan/More paper
+    vars->cNormS = vars->cNorm /( 1.0 + lInfVectorNorm( vars->xi ) );
 
     if( vars->tol <= param->opttol && vars->cNorm <= param->nlinfeastol )
         return true;

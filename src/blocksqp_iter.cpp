@@ -284,7 +284,7 @@ void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
 void SQPiterate::initIterate( SQPoptions* param )
 {
     alpha = 1.0;
-    alphaSOC = 0.0;
+    nSOCS = 0;
     reducedStepCount = 0;
     steptype = 0;
 

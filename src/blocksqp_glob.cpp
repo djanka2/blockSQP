@@ -4,19 +4,19 @@
 namespace blockSQP
 {
 
-void SQPmethod::acceptStep( double alpha, double alphaSOC )
+void SQPmethod::acceptStep( double alpha )
 {
-    acceptStep( vars->deltaXi, vars->lambdaQP, alpha, alphaSOC );
+    acceptStep( vars->deltaXi, vars->lambdaQP, alpha, 0 );
 }
 
-void SQPmethod::acceptStep( const Matrix &deltaXi, const Matrix &lambdaQP, double alpha, double alphaSOC )
+void SQPmethod::acceptStep( const Matrix &deltaXi, const Matrix &lambdaQP, double alpha, int nSOCS )
 {
     int k;
     double lStpNorm;
 
     // Current alpha
     vars->alpha = alpha;
-    vars->alphaSOC = alphaSOC;
+    vars->nSOCS = nSOCS;
 
     // Set new xi by accepting the current trial step
     for( k=0; k<vars->xi.M(); k++ )
@@ -104,7 +104,7 @@ int SQPmethod::fullstep()
         }
         else
         {
-            acceptStep( alpha, 0.0 );
+            acceptStep( alpha );
             return 0;
         }
     }// backtracking steps
@@ -191,7 +191,7 @@ int SQPmethod::filterLineSearch()
                     else
                     {
                         // found suitable alpha, stop
-                        acceptStep( alpha, 0.0 );
+                        acceptStep( alpha );
                         break;
                     }
                 }
@@ -202,7 +202,7 @@ int SQPmethod::filterLineSearch()
         if( cNormTrial < (1.0 - param->gammaTheta) * cNorm || objTrial < vars->obj - param->gammaF * cNorm )
         {
             // found suitable alpha, stop
-            acceptStep( alpha, 0.0 );
+            acceptStep( alpha );
             break;
         }
         else
@@ -252,7 +252,7 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
     if( cNormTrial < cNorm )
         return false;
 
-    double alphaSOC = 1.0;
+    int nSOCS = 0;
     double cNormTrialSOC, cNormOld, objTrialSOC;
     int i, k, info;
     int nVar = prob->nVar;
@@ -267,12 +267,15 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
     deltaXiSOC.Dimension( vars->deltaXi.M() ).Initialize( 0.0 );
     lambdaQPSOC.Dimension( vars->lambdaQP.M() ).Initialize( 0.0 );
 
-    // Update bounds for SOC QP
-    updateStepBounds( 1 );
-    cNormOld = cNorm;
     // Second order correction loop
+    cNormOld = cNorm;
     for( k=0; k<param->maxSOCiter; k++ )
     {
+        nSOCS++;
+
+        // Update bounds for SOC QP
+        updateStepBounds( 1 );
+
         // Solve SOC QP to obtain new, corrected deltaXi
         // (store in separate vector to avoid conflict with original deltaXi -> need it in linesearch!)
         info = solveQP( deltaXiSOC, lambdaQPSOC, 1 );
@@ -281,12 +284,11 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
 
         // Set new SOC trial point
         for( i=0; i<nVar; i++ )
-            vars->trialXi( i ) = vars->xi( i ) + alphaSOC * deltaXiSOC( i );
+            vars->trialXi( i ) = vars->xi( i ) + deltaXiSOC( i );
 
         // Compute objective and ||constr(trialXiSOC)||_1 at SOC trial point
         prob->evaluate( vars->trialXi, &objTrialSOC, vars->constr, &info );
         cNormTrialSOC = lInfConstraintNorm( vars->trialXi, vars->constr, prob->bu, prob->bl );
-        // Reduce step if evaluation fails, if lower bound is violated or if objective is NaN
         if( info != 0 || objTrialSOC < prob->objLo || objTrialSOC > prob->objUp || !(objTrialSOC == objTrialSOC) || !(cNormTrialSOC == cNormTrialSOC) )
             return false; // evaluation error, abort SOC
 
@@ -299,14 +301,19 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
         if( cNorm <= param->thetaMin && swCond )
             if( objTrialSOC > vars->obj + param->eta*dfTdeltaXi )
             {
-                // Armijo condition does not hold for SOC step, reduce SOC step
-                reduceSOCStepsize( &alphaSOC );
+                // Armijo condition does not hold for SOC step, next SOC step
+
+                // If constraint violation gets worse by SOC, abort
+                if( cNormTrialSOC > param->kappaSOC * cNormOld )
+                    return false;
+                else
+                    cNormOld = cNormTrialSOC;
                 continue;
             }
             else
             {
                 // found suitable alpha during SOC, stop
-                acceptStep( deltaXiSOC, lambdaQPSOC, 1.0, alphaSOC );
+                acceptStep( deltaXiSOC, lambdaQPSOC, 1.0, nSOCS );
                 return true;
             }
 
@@ -315,19 +322,20 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
             if( cNormTrialSOC < (1.0 - param->gammaTheta) * cNorm || objTrialSOC < vars->obj - param->gammaF * cNorm )
             {
                 // found suitable alpha during SOC, stop
-                acceptStep( deltaXiSOC, lambdaQPSOC, 1.0, alphaSOC );
+                acceptStep( deltaXiSOC, lambdaQPSOC, 1.0, nSOCS );
                 return true;
             }
             else
             {
-                // Trial point is dominated by current point, reduce SOC step
-                reduceSOCStepsize( &alphaSOC );
+                // Trial point is dominated by current point, next SOC step
+
+                // If constraint violation gets worse by SOC, abort
+                if( cNormTrialSOC > param->kappaSOC * cNormOld )
+                    return false;
+                else
+                    cNormOld = cNormTrialSOC;
                 continue;
             }
-
-        // If constraint violation gets worse by SOC, abort
-        if( cNormTrialSOC > param->kappaSOC * cNormOld )
-            return false;
     }
 
     return false;
@@ -341,8 +349,8 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
 int SQPmethod::feasibilityRestorationPhase()
 {
     // No Feasibility restoration phase
-    if( param->restoreFeas == 0 )
-        return -1;
+    //if( param->restoreFeas == 0 )
+        //return -1;
 
     int ret, it, i, k, info;
     int maxFeasRestIt = 100;
@@ -365,7 +373,7 @@ int SQPmethod::feasibilityRestorationPhase()
     prob->evaluate( vars->xi, &objTrial, vars->constr, &info );
 
     // Create a min(constrVio) NLP, an options and a stats object
-    restProb = new RestorationProblem( prob, vars->xi, vars->constr );
+    restProb = new RestorationProblem( prob, vars->xi );
     restOpts = new SQPoptions();
     restStats = new SQPstats( stats->outpath );
 
@@ -444,7 +452,7 @@ int SQPmethod::feasibilityRestorationPhase()
             vars->lambdaQP( k ) = restMethod->vars->lambdaQP( 2*prob->nCon + k );
         }
         vars->alpha = 1.0;
-        vars->alphaSOC = 0.0;
+        vars->nSOCS = 0;
 
         // reset reduced step counter
         vars->reducedStepCount = 0;
@@ -501,7 +509,7 @@ int SQPmethod::feasibilityRestorationHeuristic()
     // This is done instead of a Newton-like step in the current SQP iteration
 
     vars->alpha = 1.0;
-    vars->alphaSOC = 0.0;
+    vars->nSOCS = 0;
 
     // reset reduced step counter
     vars->reducedStepCount = 0;
@@ -563,7 +571,7 @@ int SQPmethod::kktErrorReduction( )
 
     if( fmax( cNormTrial, trialTol ) < fmax( vars->cNorm, vars->tol ) )
     {
-        acceptStep( 1.0, 0.0 );
+        acceptStep( 1.0 );
         return 0;
     }
     else

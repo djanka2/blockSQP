@@ -55,10 +55,10 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
                 printf("%-9s","|stp|" );
                 printf("%-10s","|lstp|" );
             }
-            printf("%-11s","alpha" );
+            printf("%-8s","alpha" );
             if( param->printLevel > 1 )
             {
-                printf("%-6s","SOC" );
+                printf("%-6s","nSOCS" );
                 printf("%-18s","sk, da, sca" );
                 printf("%-6s","QPr,mu" );
             }
@@ -95,10 +95,10 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
                 printf("%-9s","|stp|" );
                 printf("%-10s","|lstp|" );
             }
-            printf("%-11s","alpha" );
+            printf("%-8s","alpha" );
             if( param->printLevel > 1 )
             {
-                printf("%-6s","SOC" );
+                printf("%-6s","nSOCS" );
                 printf("%-18s","sk, da, sca" );
                 printf("%-6s","QPr,mu" );
             }
@@ -127,10 +127,10 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
 
             if( param->printLevel > 1 )
             {
-                if( vars->alphaSOC == 0.0 || !param->printColor )
-                    printf("%-9.1e", vars->alphaSOC );
+                if( vars->nSOCS == 0 || !param->printColor )
+                    printf("%5i", vars->nSOCS );
                 else
-                    printf("\033[0;36m%-9.1e\033[0m", vars->alphaSOC );
+                    printf("\033[0;36m%5i\033[0m", vars->nSOCS );
                 printf("%3i, %3i, %-9.1e", hessSkipped, hessDamped, averageSizingFactor );
                 printf("%i, %-9.1e", qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
             }
@@ -138,9 +138,9 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
         }
 #ifdef MYDEBUG
         // Print everything in a CSV file as well
-        fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
+        fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %i, %23.16e, %i, %23.16e\n",
                  vars->obj, vars->cNorm, vars->tol, vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
-                 vars->lambdaStepNorm, vars->alpha, vars->alphaSOC, hessSkipped, hessDamped, averageSizingFactor,
+                 vars->lambdaStepNorm, vars->alpha, vars->nSOCS, hessSkipped, hessDamped, averageSizingFactor,
                  qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
 
         // Print update sequence

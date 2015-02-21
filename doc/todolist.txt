@@ -1,9 +1,5 @@
 TODO for Diss
 =============
-- Termination criterion, scale feasibility with (1+||x||)**(-1)
-- Revise SOCS loop: alphaSOC is not really the stepsize, we have to change the right-hand side
-  for additional second-order corrections. Probably need to call updateStepBounds() for next SOCS QP.
-  Does this interfere with main line search loop?
 - L2 restoration phase
 - Finite difference Hessian
 - Parallelization of QP solution
