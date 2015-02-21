@@ -49,7 +49,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     {
 #ifdef QPSOLVER_SPARSE
         // Convert Hessian to sparse format
-        vars->convertHessian( prob );
+        vars->convertHessian( prob, param->eps );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
                                        vars->hessIndRow, vars->hessIndCol,
                                        vars->hessNz, vars->hessIndLo );
@@ -231,7 +231,7 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         }
 
         // Convert Hessian to sparse format
-        vars->convertHessian( prob );
+        vars->convertHessian( prob, param->eps );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar, vars->hessIndRow,
                                        vars->hessIndCol, vars->hessNz, vars->hessIndLo );
 
@@ -702,7 +702,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP )
     clambda = lambdaQP.ARRAY();
 
     // Convert Hessian to sparse format
-    vars->convertHessian( prob );
+    vars->convertHessian( prob, param->eps );
 
     // ldH should in fact be an int variable, I try to get the Hessian
     // index information into my Hess subroutine with this

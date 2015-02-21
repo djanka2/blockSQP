@@ -158,7 +158,7 @@ void SQPiterate::allocHess( SQPoptions *param )
  * Convert array *hess to a single symmetric sparse matrix in
  * Harwell-Boeing format (as used by qpOASES)
  */
-void SQPiterate::convertHessian( Problemspec *prob )
+void SQPiterate::convertHessian( Problemspec *prob, double eps )
 {
     int iBlock, count, colCountTotal, rowOffset, i, j;
     int nnz, nCols, nRows;
@@ -168,7 +168,7 @@ void SQPiterate::convertHessian( Problemspec *prob )
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
         for( i=0; i<hess[iBlock].N(); i++ )
             for( j=i; j<hess[iBlock].N(); j++ )
-                if( hess[iBlock]( i,j ) != 0.0 )
+                if( fabs(hess[iBlock]( i,j )) > eps )
                 {
                     nnz++;
                     if( i != j )// off-diagonal elements count twice
@@ -198,7 +198,7 @@ void SQPiterate::convertHessian( Problemspec *prob )
             hessIndCol[colCountTotal] = count;
 
             for( j=0; j<nRows; j++ )
-                if( hess[iBlock]( i,j ) != 0.0 )
+                if( fabs(hess[iBlock]( i,j )) > eps )
                 {
                     hessNz[count] = hess[iBlock]( i, j );
                     hessIndRow[count] = j + rowOffset;

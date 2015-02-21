@@ -160,8 +160,7 @@ class SQPiterate
         /// Allocate diagonal block Hessian
         void allocHess( SQPoptions* param );
         /// Convert *hess to column compressed sparse format
-        void convertHessian( Problemspec *prob );
-        void convertHessian( Problemspec *prob, bool firstCall );
+        void convertHessian( Problemspec *prob, double eps );
         /// Allocate variables specifically needed by vmused SQP method
         void allocAlg( Problemspec* prob, SQPoptions* param );
         /// Set initial filter, objective function, tolerances etc.
@@ -287,8 +286,6 @@ class SQPmethod
         /*
          * Solve QP subproblem
          */
-        /// Convert arrays of SymMatrices to a sparse Hessian (Harwell Boeing Format)
-        void convertHessian();
         /// Update the bounds on the current step, i.e. the QP variables
         void updateStepBounds( bool soc );
         /// Solve a QP with QPOPT or qpOASES to obtain a step deltaXi and estimates for the Lagrange multipliers

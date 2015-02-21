@@ -181,7 +181,7 @@ int SQPmethod::run( int maxIt, int warmStart )
                     vars->steptype = -1;
 
                 // Heuristic 2: Try to reduce constraint violation by closing continuity gaps to produce an admissable iterate
-                if( lsError && lInfConstraintNorm( vars->xi, vars->constr, prob->bu, prob->bl ) > 0.01 * param->nlinfeastol && vars->steptype < 2 )
+                if( lsError && vars->cNorm > 0.01 * param->nlinfeastol && vars->steptype < 2 )
                 {// Don't do this twice in a row!
 
                     printf("***Warning! Steplength too short. Trying to reduce constraint violation...");

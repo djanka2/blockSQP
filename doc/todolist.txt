@@ -1,6 +1,5 @@
 TODO for Diss
 =============
-- L2 restoration phase
 - Finite difference Hessian
 - Parallelization of QP solution
 - Greenstadt, PSB, DFP updates
@@ -14,7 +13,6 @@ Tuning of SQP method
 
 Additional Features of SQP method
 =================================
-- Feasibility restoration phase: minimizes L_1 constraint violation but we want L_inf constraint violation! This doesn't fit together and yields points that do not improve constraint violation...
 - Warm start and cold start feature: read in primal and dual variables (for cold start) and additionally Hessian approximation, active set and current filter (for warm starts) from text files (or binary files)
 - print information about the current SQP options
 
