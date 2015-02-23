@@ -328,9 +328,9 @@ void RestorationProblem::printVariables( const Matrix &xi, const Matrix &lambda,
 {
     int k;
 
-    //printf("\n<|----- Original Variables -----|>\n");
-    //for( k=0; k<parent->nVar; k++ )
-        //printf("%7i: %-30s   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, parent->varNames[k], bl(k), xi(k), bu(k), lambda(k));
+    printf("\n<|----- Original Variables -----|>\n");
+    for( k=0; k<parent->nVar; k++ )
+        printf("%7i: %-30s   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, parent->varNames[k], bl(k), xi(k), bu(k), lambda(k));
     printf("\n<|----- Slack Variables -----|>\n");
     for( k=parent->nVar; k<nVar; k++ )
         printf("%7i: slack   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, bl(k), xi(k), bu(k), lambda(k));

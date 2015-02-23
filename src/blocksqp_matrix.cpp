@@ -149,7 +149,7 @@ Matrix::Matrix( int M, int N, double *ARRAY, int LDIM )
 Matrix::Matrix( const Matrix &A )
 {
     int i, j;
-
+printf("copy constructor\n");
     Ccount++;
 
     m = A.m;
@@ -163,6 +163,41 @@ Matrix::Matrix( const Matrix &A )
         for ( j = 0; j < n ; j++ )
             (*this)(i,j) = A(i,j);
             //(*this)(i,j) = A.a(i,j);
+}
+
+Matrix &Matrix::operator=( const Matrix &A )
+{
+    int i, j;
+printf("assignment operator\n");
+    Ecount++;
+
+    if ( this != &A )
+        if ( !tflag )
+        {
+
+            free();
+
+            m = A.m;
+            n = A.n;
+            ldim = A.ldim;
+
+            malloc();
+
+            for ( i = 0; i < m; i++ )
+                for ( j = 0; j < n ; j++ )
+                    (*this)(i,j) = A(i,j);
+        }
+        else
+        {
+            if ( m != A.m || n != A.n )
+                Error("= operation not allowed");
+
+            for ( i = 0; i < m; i++ )
+                for ( j = 0; j < n ; j++ )
+                    (*this)(i,j) = A(i,j);
+        }
+
+    return *this;
 }
 
 

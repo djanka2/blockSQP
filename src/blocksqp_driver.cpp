@@ -253,7 +253,7 @@ int main( int argc, const char* argv[] )
     /* Setup problem data */
     /*--------------------*/
 
-    int nVar = 5;
+    int nVar = 2;
 
     int nCon = nVar-1;
 
@@ -284,7 +284,6 @@ int main( int argc, const char* argv[] )
     // Create problem evaluation object
     prob = new MyProblem( nVar, nCon, nBlocks, blockIdx, bl, bu, x0 );
 
-
     /*------------------------*/
     /* Options for SQP solver */
     /*------------------------*/
@@ -296,7 +295,7 @@ int main( int argc, const char* argv[] )
     // 0: no globalization, 1: filter line search
     opts->globalization = 0;
     // 0: (scaled) identity, 1: SR1, 2: BFGS
-    opts->hessUpdate = 1;
+    opts->hessUpdate = 4;
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: scale initial Hessian with geometric mean of 1 and 2
     // 4: scale Hessian in every step with centered Oren-Luenberger sizing according to Tapia paper
@@ -319,7 +318,7 @@ int main( int argc, const char* argv[] )
     meth = new SQPmethod( prob, opts, stats );
 
     ret = meth->init();
-    ret = meth->run( 100 );
+    ret = meth->run( 1);
     meth->finish();
     if( ret == 1 )
         printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");

@@ -63,6 +63,7 @@ class Matrix
       virtual double &operator()( int i, int j ) const;
       virtual double &operator()( int i );
       virtual double &operator()( int i ) const;
+      virtual Matrix &operator=( const Matrix &A );
 
       Matrix &Dimension( int, int = 1, int = -1 );
       Matrix &Initialize( double (*)( int, int ) );

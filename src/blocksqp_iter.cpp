@@ -77,14 +77,14 @@ SQPiterate::SQPiterate( SQPiterate *iter )
     for( i=0; i<nBlocks+1; i++ )
         blockIdx[i] = iter->blockIdx[i];
 
-    xi = Matrix( iter->xi );
-    lambda = Matrix( iter->lambda );
-    constr = Matrix( iter->constr );
-    gradObj = Matrix( iter->gradObj );
-    gradLagrange = Matrix( iter->gradLagrange );
+    xi = iter->xi;
+    lambda = iter->lambda;
+    constr = iter->constr;
+    gradObj = iter->gradObj;
+    gradLagrange = iter->gradLagrange;
 
     #ifdef QPSOLVER_DENSE
-    constrJac = Matrix( iter->constrJac );
+    constrJac = iter->constrJac;
     #else
     int nVar = xi.M();
     int nnz = iter->jacIndCol[nVar];

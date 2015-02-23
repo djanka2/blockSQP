@@ -80,55 +80,100 @@ void SQPmethod::resetHessian( int iBlock )
  */
 int SQPmethod::calcFiniteDiffHessian()
 {
-    int iVar, jVar, iBlock, nBlocks, infoConstr, infoObj, info, offset, nVarBlock;
-    double dummy;
+    int iVar, jVar, k, iBlock, nBlocks, maxBlock, infoObj, info, offset, idx;
+    double dummy, lowerVio, upperVio;
     SymMatrix *dummySym;
-    SQPiterate *varsP1, *varsP2;
+    Matrix pert;
+    SQPiterate *varsP;
 
-    const double DELTA = 1.0e-8;
+    const double myDelta = 1.0e-4;
+    const double minDelta = 1.0e-8;
 
-    varsP1 = new SQPiterate( vars );
-    varsP2 = new SQPiterate( vars );
+    varsP = new SQPiterate( vars );
+    pert.Dimension( prob->nVar );
 
     info = 0;
+
+    // Find out the largest block
+    maxBlock = 0;
     for( iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+        if( vars->blockIdx[iBlock+1] - vars->blockIdx[iBlock] > maxBlock )
+            maxBlock = vars->blockIdx[iBlock+1] - vars->blockIdx[iBlock];
+
+    // Compute original Lagrange gradient
+    calcLagrangeGradient( vars->lambda, vars->gradObj, vars->jacNz, vars->jacIndRow, vars->jacIndCol, vars->gradLagrange, 0 );
+
+    for( iVar = 0; iVar<maxBlock; iVar++ )
     {
-        offset = vars->blockIdx[iBlock];
-        nVarBlock = vars->blockIdx[iBlock+1] - vars->blockIdx[iBlock];
-        vars->hess[iBlock].Initialize( 0.0 );
-        for( iVar=vars->blockIdx[iBlock]; iVar<vars->blockIdx[iBlock+1]; iVar++ )
+        pert.Initialize( 0.0 );
+
+        // Perturb all blocks simultaneously
+        for( iBlock=0; iBlock<vars->nBlocks; iBlock++ )
         {
-            vars->xi( iVar ) += DELTA;
+            idx = vars->blockIdx[iBlock] + iVar;
+            // Skip blocks that have less than iVar variables
+            if( idx < vars->blockIdx[iBlock+1] )
+            {
+                pert( idx ) = myDelta * fabs( vars->xi( idx ) );
+                pert( idx ) = fmax( myDelta, minDelta );
 
-            // Evaluate objective and constraints for perturbed xi and compute perturbed Lagrange gradient
-            #ifdef QPSOLVER_SPARSE
-            prob->evaluate( vars->xi, vars->lambda, &dummy, varsP1->constr, varsP1->gradObj, varsP1->jacNz, varsP1->jacIndRow, varsP1->jacIndCol, vars->hess, 1, &info );
-            calcLagrangeGradient( vars->lambda, varsP1->gradObj, varsP1->jacNz, varsP1->jacIndRow, varsP1->jacIndCol, varsP1->gradLagrange, 0 );
-            #else
-            prob->evaluate( vars->xi, vars->lambda, &dummy, varsP1->constr, varsP1->gradObj, varsP1->constrJac, vars->hess, 1, &info );
-            calcLagrangeGradient( vars->lambda, varsP1->gradObj, varsP1->constrJac, varsP1->gradLagrange, 0 );
-            #endif
-
-            vars->xi( iVar ) -= 2*DELTA;
-
-            // Evaluate objective and constraints for perturbed xi and compute perturbed Lagrange gradient
-            #ifdef QPSOLVER_SPARSE
-            prob->evaluate( vars->xi, vars->lambda, &dummy, varsP2->constr, varsP2->gradObj, varsP2->jacNz, varsP2->jacIndRow, varsP2->jacIndCol, vars->hess, 1, &info );
-            calcLagrangeGradient( vars->lambda, varsP2->gradObj, varsP2->jacNz, varsP2->jacIndRow, varsP2->jacIndCol, varsP2->gradLagrange, 0 );
-            #else
-            prob->evaluate( vars->xi, vars->lambda, &dummy, varsP2->constr, varsP2->gradObj, varsP2->constrJac, vars->hess, 1, &info );
-            calcLagrangeGradient( vars->lambda, varsP2->gradObj, varsP2->constrJac, varsP2->gradLagrange, 0 );
-            #endif
-
-            vars->xi( iVar ) += DELTA;
-
-            // Compute central finite difference approximation
-            for( jVar=iVar; jVar<vars->blockIdx[iBlock+1]; jVar++ )
-                vars->hess[iBlock]( iVar-offset, jVar-offset ) = ( varsP1->gradLagrange( jVar ) - varsP2->gradLagrange( jVar ) ) / (2.0 * DELTA);
+                // If perturbation violates upper bound, try to perturb with negative
+                upperVio = vars->xi( idx ) + pert( idx ) - prob->bu( idx );
+                if( upperVio > 0 )
+                {
+                    lowerVio = prob->bl( idx ) -  ( vars->xi( idx ) - pert( idx ) );
+                    // If perturbation violates also lower bound, take the largest perturbation possible
+                    if( lowerVio > 0 )
+                    {
+                        if( lowerVio > upperVio )
+                            pert( idx ) = -lowerVio;
+                        else
+                            pert( idx ) = upperVio;
+                    }
+                    // If perturbation does not violate lower bound, take -computed perturbation
+                    else
+                    {
+                        pert( idx ) = -pert( idx );
+                    }
+                }
+            }
         }
+
+        // Add perturbation
+        for( k=0; k<prob->nVar; k++ )
+            vars->xi( k ) += pert( k );
+
+        // Compute perturbed Lagrange gradient
+        #ifdef QPSOLVER_SPARSE
+        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP->constr, varsP->gradObj, varsP->jacNz, varsP->jacIndRow, varsP->jacIndCol, vars->hess, 1, &info );
+        calcLagrangeGradient( vars->lambda, varsP->gradObj, varsP->jacNz, varsP->jacIndRow, varsP->jacIndCol, varsP->gradLagrange, 0 );
+        #else
+        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP->constr, varsP->gradObj, varsP->constrJac, vars->hess, 1, &info );
+        calcLagrangeGradient( vars->lambda, varsP->gradObj, varsP->constrJac, varsP->gradLagrange, 0 );
+        #endif
+
+        // Compute finite difference approximations: one column in every block
+        for( iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+        {
+            idx = vars->blockIdx[iBlock] + iVar;
+            // Skip blocks that have less than iVar variables
+            if( idx < vars->blockIdx[iBlock+1] )
+            {
+                for( jVar=iVar; jVar<vars->blockIdx[iBlock+1]-vars->blockIdx[iBlock]; jVar++ )
+                {// Take symmetrized matrices
+                    vars->hess[iBlock]( iVar, jVar ) =  ( varsP->gradLagrange( iVar ) - vars->gradLagrange( jVar ) );
+                    vars->hess[iBlock]( iVar, jVar ) += ( varsP->gradLagrange( jVar ) - vars->gradLagrange( iVar ) );
+                    vars->hess[iBlock]( iVar, jVar ) *= 0.5 / pert( idx );
+                }
+            }
+        }
+
+        // Subtract perturbation
+        for( k=0; k<prob->nVar; k++ )
+            vars->xi( k ) -= pert( k );
     }
 
-    delete varsP1, varsP2;
+    delete varsP;
 
     return info;
 }
