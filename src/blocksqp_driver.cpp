@@ -253,7 +253,7 @@ int main( int argc, const char* argv[] )
     /* Setup problem data */
     /*--------------------*/
 
-    int nVar = 2;
+    int nVar = 6;
 
     int nCon = nVar-1;
 
@@ -318,7 +318,7 @@ int main( int argc, const char* argv[] )
     meth = new SQPmethod( prob, opts, stats );
 
     ret = meth->init();
-    ret = meth->run( 1);
+    ret = meth->run( 10 );
     meth->finish();
     if( ret == 1 )
         printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");

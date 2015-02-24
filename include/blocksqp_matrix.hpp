@@ -50,7 +50,7 @@ class Matrix
 
       Matrix( int = 1, int = 1, int = -1 );         ///< constructor with standard arguments
       Matrix( int, int, double*, int = -1 );
-      Matrix( const Matrix& );
+      Matrix( const Matrix& A );
       ~Matrix( void );
 
       int M( void ) const;                          ///< number of rows
@@ -94,8 +94,8 @@ class SymMatrix : public Matrix
         SymMatrix( int, double* );
         SymMatrix( int, int, int );
         SymMatrix( int, int, double*, int = -1 );
-        SymMatrix( const Matrix& );
-        SymMatrix( const SymMatrix& );
+        SymMatrix( const Matrix& A );
+        SymMatrix( const SymMatrix& A );
         ~SymMatrix( void );
 
         virtual double &operator()( int i, int j );

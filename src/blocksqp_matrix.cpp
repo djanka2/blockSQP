@@ -149,7 +149,7 @@ Matrix::Matrix( int M, int N, double *ARRAY, int LDIM )
 Matrix::Matrix( const Matrix &A )
 {
     int i, j;
-printf("copy constructor\n");
+    //printf("copy constructor\n");
     Ccount++;
 
     m = A.m;
@@ -168,13 +168,12 @@ printf("copy constructor\n");
 Matrix &Matrix::operator=( const Matrix &A )
 {
     int i, j;
-printf("assignment operator\n");
+    //printf("assignment operator\n");
     Ecount++;
 
     if ( this != &A )
         if ( !tflag )
         {
-
             free();
 
             m = A.m;

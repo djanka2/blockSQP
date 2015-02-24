@@ -50,6 +50,7 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
     hessNz = NULL;
     #endif
 
+    noUpdateCounter = NULL;
     jacNz = NULL;
     jacIndCol = NULL;
     jacIndRow = NULL;
@@ -68,36 +69,48 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
 }
 
 
-SQPiterate::SQPiterate( SQPiterate *iter )
+SQPiterate::SQPiterate( const SQPiterate &iter )
 {
     int i;
 
-    nBlocks = iter->nBlocks;
+    nBlocks = iter.nBlocks;
     blockIdx = new int[nBlocks+1];
     for( i=0; i<nBlocks+1; i++ )
-        blockIdx[i] = iter->blockIdx[i];
+        blockIdx[i] = iter.blockIdx[i];
 
-    xi = iter->xi;
-    lambda = iter->lambda;
-    constr = iter->constr;
-    gradObj = iter->gradObj;
-    gradLagrange = iter->gradLagrange;
+    xi = iter.xi;
+    lambda = iter.lambda;
+    constr = iter.constr;
+    gradObj = iter.gradObj;
+    gradLagrange = iter.gradLagrange;
 
     #ifdef QPSOLVER_DENSE
-    constrJac = iter->constrJac;
+    constrJac = iter.constrJac;
+    jacNz = NULL;
+    jacIndRow = NULL;
+    jacIndCol = NULL;
     #else
     int nVar = xi.M();
-    int nnz = iter->jacIndCol[nVar];
+    int nnz = iter.jacIndCol[nVar];
 
     jacNz = new double[nnz];
     for( i=0; i<nnz; i++ )
-        jacNz[i] = iter->jacNz[i];
+        jacNz[i] = iter.jacNz[i];
 
     jacIndRow = new int[nnz + (nVar+1) + nVar];
     for( i=0; i<nnz + (nVar+1) + nVar; i++ )
-        jacIndRow[i] = iter->jacIndRow[i];
+        jacIndRow[i] = iter.jacIndRow[i];
     jacIndCol = jacIndRow + nnz;
     #endif
+
+    noUpdateCounter = NULL;
+    hessNz = NULL;
+    hessIndCol = NULL;
+    hessIndRow = NULL;
+    hessIndLo = NULL;
+    hess = NULL;
+    hess1 = NULL;
+    hess2 = NULL;
 }
 
 
@@ -297,14 +310,14 @@ void SQPiterate::initIterate( SQPoptions* param )
 
 SQPiterate::~SQPiterate( void )
 {
-    delete[] blockIdx;
-    delete[] noUpdateCounter;
-
+    if( blockIdx != NULL )
+        delete[] blockIdx;
+    if( noUpdateCounter != NULL )
+        delete[] noUpdateCounter;
     if( jacNz != NULL )
         delete[] jacNz;
     if( jacIndRow != NULL )
         delete[] jacIndRow;
-
     if( hessNz != NULL )
         delete[] hessNz;
     if( hessIndRow != NULL )

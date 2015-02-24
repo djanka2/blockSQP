@@ -80,16 +80,15 @@ void SQPmethod::resetHessian( int iBlock )
  */
 int SQPmethod::calcFiniteDiffHessian()
 {
-    int iVar, jVar, k, iBlock, nBlocks, maxBlock, infoObj, info, offset, idx;
+    int iVar, jVar, k, iBlock, nBlocks, maxBlock, infoObj, info, offset, idx, idx1, idx2;
     double dummy, lowerVio, upperVio;
     SymMatrix *dummySym;
     Matrix pert;
-    SQPiterate *varsP;
+    SQPiterate varsP = SQPiterate( *vars );
 
     const double myDelta = 1.0e-4;
     const double minDelta = 1.0e-8;
 
-    varsP = new SQPiterate( vars );
     pert.Dimension( prob->nVar );
 
     info = 0;
@@ -145,25 +144,26 @@ int SQPmethod::calcFiniteDiffHessian()
 
         // Compute perturbed Lagrange gradient
         #ifdef QPSOLVER_SPARSE
-        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP->constr, varsP->gradObj, varsP->jacNz, varsP->jacIndRow, varsP->jacIndCol, vars->hess, 1, &info );
-        calcLagrangeGradient( vars->lambda, varsP->gradObj, varsP->jacNz, varsP->jacIndRow, varsP->jacIndCol, varsP->gradLagrange, 0 );
+        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP.constr, varsP.gradObj, varsP.jacNz, varsP.jacIndRow, varsP.jacIndCol, vars->hess, 1, &info );
+        calcLagrangeGradient( vars->lambda, varsP.gradObj, varsP.jacNz, varsP.jacIndRow, varsP.jacIndCol, varsP.gradLagrange, 0 );
         #else
-        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP->constr, varsP->gradObj, varsP->constrJac, vars->hess, 1, &info );
-        calcLagrangeGradient( vars->lambda, varsP->gradObj, varsP->constrJac, varsP->gradLagrange, 0 );
+        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP.constr, varsP.gradObj, varsP.constrJac, vars->hess, 1, &info );
+        calcLagrangeGradient( vars->lambda, varsP.gradObj, varsP.constrJac, varsP.gradLagrange, 0 );
         #endif
 
         // Compute finite difference approximations: one column in every block
         for( iBlock=0; iBlock<vars->nBlocks; iBlock++ )
         {
-            idx = vars->blockIdx[iBlock] + iVar;
+            idx1 = vars->blockIdx[iBlock] + iVar;
             // Skip blocks that have less than iVar variables
-            if( idx < vars->blockIdx[iBlock+1] )
+            if( idx1 < vars->blockIdx[iBlock+1] )
             {
                 for( jVar=iVar; jVar<vars->blockIdx[iBlock+1]-vars->blockIdx[iBlock]; jVar++ )
                 {// Take symmetrized matrices
-                    vars->hess[iBlock]( iVar, jVar ) =  ( varsP->gradLagrange( iVar ) - vars->gradLagrange( jVar ) );
-                    vars->hess[iBlock]( iVar, jVar ) += ( varsP->gradLagrange( jVar ) - vars->gradLagrange( iVar ) );
-                    vars->hess[iBlock]( iVar, jVar ) *= 0.5 / pert( idx );
+                    idx2 = vars->blockIdx[iBlock] + jVar;
+                    vars->hess[iBlock]( iVar, jVar ) =  ( varsP.gradLagrange( idx1 ) - vars->gradLagrange( idx2 ) );
+                    vars->hess[iBlock]( iVar, jVar ) += ( varsP.gradLagrange( idx2 ) - vars->gradLagrange( idx1 ) );
+                    vars->hess[iBlock]( iVar, jVar ) *= 0.5 / pert( idx1 );
                 }
             }
         }
@@ -172,8 +172,6 @@ int SQPmethod::calcFiniteDiffHessian()
         for( k=0; k<prob->nVar; k++ )
             vars->xi( k ) -= pert( k );
     }
-
-    delete varsP;
 
     return info;
 }

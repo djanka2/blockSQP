@@ -152,7 +152,7 @@ class SQPiterate
     public:
         /// Call allocation and initializing routines
         SQPiterate( Problemspec* prob, SQPoptions* param, bool full );
-        SQPiterate( SQPiterate* iter );
+        SQPiterate( const SQPiterate &iter );
         /// Allocate variables that any SQP code needs
         void allocMin( Problemspec* prob );
         /// Allocate space for Jacobian
