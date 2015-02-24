@@ -253,7 +253,7 @@ int main( int argc, const char* argv[] )
     /* Setup problem data */
     /*--------------------*/
 
-    int nVar = 6;
+    int nVar = 2;
 
     int nCon = nVar-1;
 
@@ -318,7 +318,7 @@ int main( int argc, const char* argv[] )
     meth = new SQPmethod( prob, opts, stats );
 
     ret = meth->init();
-    ret = meth->run( 10 );
+    ret = meth->run( 1 );
     meth->finish();
     if( ret == 1 )
         printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");
@@ -330,6 +330,9 @@ int main( int argc, const char* argv[] )
     printf("\nHessian approximation at the solution:\n");
     for( int i=0; i<meth->vars->nBlocks; i++ )
         meth->vars->hess[i].Print();
+    printf("\nFallback Hessian at the solution:\n");
+    for( int i=0; i<meth->vars->nBlocks; i++ )
+        meth->vars->hess2[i].Print();
 
     // Clean up
     delete prob;

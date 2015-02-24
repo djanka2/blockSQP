@@ -264,6 +264,18 @@ int SQPmethod::run( int maxIt, int warmStart )
         else if( param->hessUpdate == 4 )
             calcFiniteDiffHessian( );
 
+        /// Compute fallback update
+        /// \todo better interface for maintaining multiple Hessians
+        if( (param->hessUpdate == 1 || param->hessUpdate == 4) )
+        {
+            vars->hess = vars->hess2;
+            if( param->hessLimMem )
+                calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
+            if( !param->hessLimMem && param->hessUpdate == 4 )
+                calcHessianUpdate( param->fallbackUpdate, param->fallbackScaling );
+            vars->hess = vars->hess1;
+        }
+
         // If limited memory updates  are used, set pointers deltaXi and gamma to the next column in deltaMat and gammaMat
         updateDeltaGamma();
 

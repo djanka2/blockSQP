@@ -151,8 +151,8 @@ void SQPiterate::allocHess( SQPoptions *param )
         hess1[iBlock].Dimension( varDim ).Initialize( 0.0 );
     }
 
-    // For full-memory SR1, we need to maintain two Hessians
-    if( param->hessUpdate == 1 && !param->hessLimMem )
+    // For SR1 or finite differences, maintain two Hessians
+    if( param->hessUpdate == 1 || param->hessUpdate == 4 )
     {
         hess2 = new SymMatrix[nBlocks];
         for( iBlock=0; iBlock<nBlocks; iBlock++ )

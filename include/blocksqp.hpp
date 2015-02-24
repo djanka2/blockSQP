@@ -366,8 +366,6 @@ class SQPmethod
         void sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Size Hessian using the geometric mean of Nocedal and OL
         void sizeHessianMean( const Matrix &gamma, const Matrix &delta, int iBlock );
-        /// [blockwise] Compute initial scaling for L-SR1 matrix
-        int sizeHessianByrdLu( const Matrix &gammaMat, const Matrix &deltaMat, int iBlock );
 };
 
 } // namespace blockSQP
