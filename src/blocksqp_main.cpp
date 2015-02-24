@@ -19,6 +19,7 @@ SQPmethod::SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *st
     qp = new qpOASES::SQProblem( prob->nVar, prob->nCon );
     #elif defined QPSOLVER_QPOASES_SCHUR
     qp = new qpOASES::SQProblemSchur( prob->nVar, prob->nCon, qpOASES::HST_UNKNOWN, 50 );
+    qp2 = new qpOASES::SQProblemSchur( prob->nVar, prob->nCon, qpOASES::HST_UNKNOWN, 50 );
     #endif
 
     initCalled = false;
@@ -103,7 +104,8 @@ int SQPmethod::run( int maxIt, int warmStart )
     {
         /// Solve QP subproblem with qpOASES or QPOPT
         updateStepBounds( 0 );
-        infoQP = solveQP( vars->deltaXi, vars->lambdaQP );
+        //infoQP = solveQP( vars->deltaXi, vars->lambdaQP );
+        infoQP = solveQP2( vars->deltaXi, vars->lambdaQP );
 
         if( infoQP == 1 )
         {// 1.) Maximum number of iterations reached

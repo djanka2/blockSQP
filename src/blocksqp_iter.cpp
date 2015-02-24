@@ -48,6 +48,7 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
     hessNz = new double[prob->nVar*prob->nVar];
     #else
     hessNz = NULL;
+    hessNz2 = NULL;
     #endif
 
     noUpdateCounter = NULL;
@@ -57,6 +58,9 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
     hessIndCol = NULL;
     hessIndRow = NULL;
     hessIndLo = NULL;
+    hessIndCol2 = NULL;
+    hessIndRow2 = NULL;
+    hessIndLo2 = NULL;
     hess = NULL;
     hess1 = NULL;
     hess2 = NULL;
@@ -171,7 +175,8 @@ void SQPiterate::allocHess( SQPoptions *param )
  * Convert array *hess to a single symmetric sparse matrix in
  * Harwell-Boeing format (as used by qpOASES)
  */
-void SQPiterate::convertHessian( Problemspec *prob, double eps )
+void SQPiterate::convertHessian( Problemspec *prob, double eps, double *&hessNz_,
+                                 int *&hessIndRow_, int *&hessIndCol_, int *&hessIndLo_ )
 {
     int iBlock, count, colCountTotal, rowOffset, i, j;
     int nnz, nCols, nRows;
@@ -188,13 +193,13 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps )
                         nnz++;
                 }
 
-    if( hessNz != NULL ) delete[] hessNz;
-    if( hessIndRow != NULL ) delete[] hessIndRow;
+    if( hessNz_ != NULL ) delete[] hessNz_;
+    if( hessIndRow_ != NULL ) delete[] hessIndRow_;
 
-    hessNz = new double[nnz];
-    hessIndRow = new int[nnz + (prob->nVar+1) + prob->nVar];
-    hessIndCol = hessIndRow + nnz;
-    hessIndLo = hessIndCol + (prob->nVar+1);
+    hessNz_ = new double[nnz];
+    hessIndRow_ = new int[nnz + (prob->nVar+1) + prob->nVar];
+    hessIndCol_ = hessIndRow_ + nnz;
+    hessIndLo_ = hessIndCol_ + (prob->nVar+1);
 
     // 2) store matrix entries columnwise in hessNz
     count = 0; // runs over all nonzero elements
@@ -208,13 +213,13 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps )
         for( i=0; i<nCols; i++ )
         {
             // column 'colCountTotal' starts at element 'count'
-            hessIndCol[colCountTotal] = count;
+            hessIndCol_[colCountTotal] = count;
 
             for( j=0; j<nRows; j++ )
                 if( fabs(hess[iBlock]( i,j )) > eps )
                 {
-                    hessNz[count] = hess[iBlock]( i, j );
-                    hessIndRow[count] = j + rowOffset;
+                    hessNz_[count] = hess[iBlock]( i, j );
+                    hessIndRow_[count] = j + rowOffset;
                     count++;
                 }
             colCountTotal++;
@@ -222,13 +227,13 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps )
 
         rowOffset += nRows;
     }
-    hessIndCol[colCountTotal] = count;
+    hessIndCol_[colCountTotal] = count;
 
     // 3) Set reference to lower triangular matrix
     for( j=0; j<prob->nVar; j++ )
     {
-        for( i=hessIndCol[j]; i<hessIndCol[j+1] && hessIndRow[i]<j; i++);
-        hessIndLo[j] = i;
+        for( i=hessIndCol_[j]; i<hessIndCol_[j+1] && hessIndRow_[i]<j; i++);
+        hessIndLo_[j] = i;
     }
 
     if( count != nnz )

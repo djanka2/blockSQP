@@ -15,26 +15,26 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
 
     ///\todo solve 2 QPs in parallel, one for hess1, one for hess2
     qpOASES::Matrix *A;
-    qpOASES::SymmetricMatrix *H;
-    qpOASES::Options opts;
-    qpOASES::returnValue ret;
+    qpOASES::SolutionAnalysis solAna;
+    qpOASES::SymmetricMatrix *H1, *H2;
+    qpOASES::Options opts, opts2;
+    qpOASES::returnValue ret, ret2;
     double *lb, *lu, *lbA, *luA;
-    double cpuTime;
+    double cpuTime, cpuTime2;
     bool enableQPLoop = false;
-    int maxIt;
-
-    // Store last successful QP in temporary storage
-    qpSave = *qp;
+    int maxIt, maxIt2, success1;
 
     // set options for qpOASES
-    opts.enableInertiaCorrection = qpOASES::BT_TRUE;
+    opts.enableInertiaCorrection = qpOASES::BT_FALSE;
     opts.enableEqualities = qpOASES::BT_TRUE;
     opts.initialStatusBounds = qpOASES::ST_INACTIVE;
     opts.printLevel = qpOASES::PL_NONE;
     opts.numRefinementSteps = 2;
     opts.epsLITests =  2.2204e-08;
-    cpuTime = 10000.0;
-    maxIt = 5000;
+    opts2 = opts;
+    opts2.enableInertiaCorrection = qpOASES::BT_TRUE;
+    cpuTime = cpuTime2 = 10000.0;
+    maxIt = maxIt2 = 5000;
 
     // Create Jacobian, is the same for both QPs
     A = new qpOASES::SparseMatrix( prob->nCon, prob->nVar, vars->jacIndRow, vars->jacIndCol, vars->jacNz );
@@ -45,35 +45,85 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
 
     lbA = vars->deltaBl.ARRAY() + prob->nVar;
     luA = vars->deltaBu.ARRAY() + prob->nVar;
-///\todo HIER WEITERMACHEN
-    // Convert Hessian to sparse format
-    vars->convertHessian( prob, param->eps );
-    H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
-                                   vars->hessIndRow, vars->hessIndCol,
-                                   vars->hessNz, vars->hessIndLo );
 
-    // Call qpOASES
-    qp->setOptions( opts );
-    if( qp->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp->getStatus() == qpOASES::QPS_SOLVED )
-        ret = qp->hotstart( H, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
+    for( int i=0; i<2; i++ )
+    {
+        if( i == 0 )
+        {
+            // Convert 1st Hessian to sparse format
+            vars->convertHessian( prob, param->eps, vars->hessNz, vars->hessIndRow,
+                                  vars->hessIndCol, vars->hessIndLo );
+            H1 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
+                                           vars->hessIndRow, vars->hessIndCol,
+                                           vars->hessNz, vars->hessIndLo );
+
+            // Call qpOASES for indefinite Hessian
+            qp->setOptions( opts );
+            if( qp->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp->getStatus() == qpOASES::QPS_SOLVED )
+                ret = qp->hotstart( H1, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
+            else
+                ret = qp->init( H1, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
+
+            // Statistics
+            if( ret == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
+                stats->qpIterations += 1;
+            else
+                stats->qpIterations += maxIt + 1;
+
+            // If the first QP was solved successfully check if assumption (G3*) is satisfied
+            success1 = 0;
+            if( ret == qpOASES::SUCCESSFUL_RETURN )
+            {
+                // Remove some of the bounds. Is it still positive definite?
+                if( solAna.checkCurvatureOnStronglyActiveConstraints( qp ) == qpOASES::SUCCESSFUL_RETURN )
+                    ret = qpOASES::SUCCESSFUL_RETURN;
+            }
+
+            if( ret != qpOASES::SUCCESSFUL_RETURN )
+            {
+                stats->rejectedSR1++;
+                stats->qpResolve++;
+            }
+        }
+        else if( i == 1 )
+        {
+            // Convert 1st Hessian to sparse format
+            vars->convertHessian( prob, param->eps, vars->hessNz2, vars->hessIndRow2,
+                                  vars->hessIndCol2, vars->hessIndLo2 );
+            H2 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
+                                           vars->hessIndRow2, vars->hessIndCol2,
+                                           vars->hessNz2, vars->hessIndLo2 );
+
+            // Call qpOASES for indefinite Hessian
+            qp2->setOptions( opts2 );
+            if( qp2->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp2->getStatus() == qpOASES::QPS_SOLVED )
+                ret2 = qp2->hotstart( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
+            else
+                ret2 = qp2->init( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
+
+            // Statistics
+            if( ret2 == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
+                stats->qpIterations2 += 1;
+            else
+                stats->qpIterations2 += maxIt + 1;
+        }
+    }
+
+    // If first QP was successful, take it, else take the result from fallback
+    if( ret == qpOASES::SUCCESSFUL_RETURN )
+    {
+        qp2 = qp;
+        ret2 = ret;
+    }
     else
-        ret = qp->init( H, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
-
-    // Statistics
-    if( ret == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
-        stats->qpIterations += 1;
-    else
-        stats->qpIterations += maxIt + 1;
-
-    /* If filter line search with indefinite Hessian approximations is used
-     * we may have to convexify and re-solve QP. (expensive!) */
-    if( enableQPLoop )
-        ret = QPLoop( opts, ret, deltaXi, lambdaQP, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA );
+    {
+        qp = qp2;
+        ret = ret2;
+    }
 
     // Read solution
     qp->getPrimalSolution( deltaXi.ARRAY() );
     qp->getDualSolution( lambdaQP.ARRAY() );
-    vars->qpObj = qp->getObjVal();
 
     // Compute constrJac*deltaXi, need this for second order correction step
     sparseAtimesb( vars->jacNz, vars->jacIndRow, vars->jacIndCol, deltaXi, vars->AdeltaXi );
@@ -144,7 +194,9 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     {
 #ifdef QPSOLVER_SPARSE
         // Convert Hessian to sparse format
-        vars->convertHessian( prob, param->eps );
+        //vars->convertHessian( prob, param->eps );
+        vars->convertHessian( prob, param->eps, vars->hessNz, vars->hessIndRow,
+                                  vars->hessIndCol, vars->hessIndLo );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
                                        vars->hessIndRow, vars->hessIndCol,
                                        vars->hessNz, vars->hessIndLo );
@@ -326,7 +378,9 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         }
 
         // Convert Hessian to sparse format
-        vars->convertHessian( prob, param->eps );
+        //vars->convertHessian( prob, param->eps );
+        vars->convertHessian( prob, param->eps, vars->hessNz, vars->hessIndRow,
+                                  vars->hessIndCol, vars->hessIndLo );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar, vars->hessIndRow,
                                        vars->hessIndCol, vars->hessNz, vars->hessIndLo );
 

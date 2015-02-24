@@ -115,6 +115,10 @@ class SQPiterate
         int *hessIndRow;                                ///< row indices (length)
         int *hessIndCol;                                ///< indices to first entry of columns (nCols+1)
         int *hessIndLo;                                 ///< Indices to first entry of lower triangle (including diagonal) (nCols)
+        double *hessNz2;                                 ///< nonzero elements of Hessian (length)
+        int *hessIndRow2;                                ///< row indices (length)
+        int *hessIndCol2;                                ///< indices to first entry of columns (nCols+1)
+        int *hessIndLo2;                                 ///< Indices to first entry of lower triangle (including diagonal) (nCols)
 
         /*
          * Variables for QP solver
@@ -160,7 +164,9 @@ class SQPiterate
         /// Allocate diagonal block Hessian
         void allocHess( SQPoptions* param );
         /// Convert *hess to column compressed sparse format
-        void convertHessian( Problemspec *prob, double eps );
+        //void convertHessian( Problemspec *prob, double eps );
+        void convertHessian( Problemspec *prob, double eps, double *&hessNz_,
+                             int *&hessIndRow_, int *&hessIndCol_, int *&hessIndLo_ );
         /// Allocate variables specifically needed by vmused SQP method
         void allocAlg( Problemspec* prob, SQPoptions* param );
         /// Set initial filter, objective function, tolerances etc.
@@ -250,6 +256,7 @@ class SQPmethod
         SQPstats*                       stats;          ///< Statistics object for current SQP run
         #ifdef QPSOLVER_QPOASES_SCHUR
         qpOASES::SQProblemSchur*        qp;             ///< qpOASES qp object
+        qpOASES::SQProblemSchur*        qp2;            ///< qpOASES qp object
         qpOASES::SQProblemSchur         qpSave;         ///< qpOASES qp object
         #elif defined QPSOLVER_QPOASES
         qpOASES::SQProblem*             qp;             ///< qpOASES qp object
@@ -290,6 +297,7 @@ class SQPmethod
         void updateStepBounds( bool soc );
         /// Solve a QP with QPOPT or qpOASES to obtain a step deltaXi and estimates for the Lagrange multipliers
         int solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag = 0 );
+        int solveQP2( Matrix &deltaXi, Matrix &lambdaQP );
         /// If filter line search with indefinite Hessians is used convexify QP and resolved if required
 #ifdef QPSOLVER_QPOASES
         qpOASES::returnValue QPLoop( qpOASES::Options opts, qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
