@@ -411,7 +411,6 @@ void SQPstats::printVectorCpp( FILE *outfile, int *vec, int len, char* varname )
 }
 
 
-#ifdef QPSOLVER_QPOASES
 void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProblem *qp )
 {
     int i, j;
@@ -576,7 +575,6 @@ void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProble
     fprintf( outfile, "\n" );
     fclose( outfile );
 }
-#endif
 
 
 void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars )

@@ -27,9 +27,8 @@ SQPmethod::SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *st
 
 SQPmethod::~SQPmethod()
 {
-    #ifdef QPSOLVER_QPOASES
     delete qp;
-    #endif
+    delete qp2;
     delete vars;
 }
 
@@ -276,7 +275,7 @@ int SQPmethod::run( int maxIt, int warmStart )
         #ifdef PARALLELQP
         /// Compute fallback update
         /// \todo better interface for maintaining multiple Hessians
-        if( (param->hessUpdate == 1 || param->hessUpdate == 4) )
+        if( (param->hessUpdate == 1 || param->hessUpdate == 4) && param->globalization == 1 )
         {
             vars->hess = vars->hess2;
             if( param->hessLimMem )
@@ -423,8 +422,6 @@ void SQPmethod::printInfo()
     printf("Using standard version of qpOASES.\n");
     #elif defined QPSOLVER_QPOASES_SPARSE
     printf("Using standard version of qpOASES with sparse matrices.\n");
-    #elif defined QPSOLVER_QPOPT
-    printf("Using QPOPT.\n");
     #endif
 }
 

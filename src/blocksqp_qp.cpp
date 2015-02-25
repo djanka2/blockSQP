@@ -4,8 +4,6 @@
 namespace blockSQP
 {
 
-
-#ifdef QPSOLVER_QPOASES
 /**
  * Always solve 2 QPs: one with the original, one with the fallback method
  */
@@ -32,9 +30,9 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     int maxIt, maxIt2;
 
     // set options for qpOASES
-    if( flag == 0 )
+    if( flag == 0 && maxQP == 2 )
         opts.enableInertiaCorrection = qpOASES::BT_FALSE;
-    else if( flag == 1 )
+    else
         opts.enableInertiaCorrection = qpOASES::BT_TRUE;
     opts.enableEqualities = qpOASES::BT_TRUE;
     opts.initialStatusBounds = qpOASES::ST_INACTIVE;
@@ -58,6 +56,8 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     luA = vars->deltaBu.ARRAY() + prob->nVar;
 
     //printf("max threads = %i\n", omp_get_max_threads());
+    int saveNumThreads = omp_get_max_threads();
+    omp_set_num_threads( 2 );
     #pragma omp parallel for default(shared) private(i)
     for( i=0; i<maxQP; i++ )
     {
@@ -128,6 +128,7 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                 stats->qpIterations2 += maxIt2 + 1;
         }
     }
+    omp_set_num_threads( saveNumThreads );
 
     // If first QP was successful, take it, else take the result from fallback
     if( ret == qpOASES::SUCCESSFUL_RETURN || maxQP == 1 )
@@ -318,7 +319,6 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     else
         return 4;
 }
-#endif
 
 
 #ifdef QPSOLVER_QPOASES_SCHUR

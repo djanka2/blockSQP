@@ -128,7 +128,6 @@ class SQPiterate
         Matrix deltaBu;                                 ///< upper bounds for current step
         Matrix lambdaQP;                                ///< dual variables of QP
         Matrix AdeltaXi;                                ///< product of constraint Jacobian with deltaXi
-        int *istate;                                    ///< active set
 
         /*
          * For modified BFGS updates
@@ -218,9 +217,7 @@ class SQPstats
         void printDualVars( const Matrix &lambda );
         /// Print all QP data to files to be read in MATLAB
         void dumpQPMatlab( Problemspec *prob, SQPiterate *vars );
-#ifdef QPSOLVER_QPOASES
         void dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProblem *qp );
-#endif
         void printVectorCpp( FILE *outfile, double *vec, int len, char* varname );
         void printVectorCpp( FILE *outfile, int *vec, int len, char* varname );
         void printCppNull( FILE *outfile, char* varname );
@@ -259,7 +256,7 @@ class SQPmethod
         qpOASES::SQProblemSchur*        qp;             ///< qpOASES qp object
         qpOASES::SQProblemSchur*        qp2;            ///< qpOASES qp object
         qpOASES::SQProblemSchur         qpSave;         ///< qpOASES qp object
-        #elif defined QPSOLVER_QPOASES
+        #else
         qpOASES::SQProblem*             qp;             ///< qpOASES qp object
         qpOASES::SQProblem              qpSave;         ///< qpOASES qp object
         #endif
@@ -300,13 +297,12 @@ class SQPmethod
         int solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag = 0 );
         int solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag = 0 );
         /// If filter line search with indefinite Hessians is used convexify QP and resolved if required
-#ifdef QPSOLVER_QPOASES
         qpOASES::returnValue QPLoop( qpOASES::Options opts, qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
                                      double *g, qpOASES::Matrix *A, double *lb, double *lu, double *lbA, double *luA );
         qpOASES::returnValue postprocessQP_Id( qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
                                                qpOASES::SymmetricMatrix *H, double *g, qpOASES::Matrix *A,
                                                double *lb, double *lu, double *lbA, double *luA );
-#endif
+
         /*
          * Globalization Strategy
          */

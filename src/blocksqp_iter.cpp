@@ -265,10 +265,6 @@ void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
     // product of constraint Jacobian with step (deltaXi)
     AdeltaXi.Dimension( nCon ).Initialize( 0.0 );
 
-    // state of each variable (for QP solver)
-    istate = new int[nVar+nCon];
-    for( i=0; i<nVar+nCon; i++ ) istate[i] = 0;
-
     // dual variables of QP (simple bounds and general constraints)
     lambdaQP.Dimension( nVar+nCon ).Initialize( 0.0 );
 

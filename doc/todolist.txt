@@ -1,9 +1,6 @@
 TODO for Diss
 =============
-- Finite difference Hessian
-- Parallelization of QP solution
 - Greenstadt, PSB, DFP updates
-
 
 Tuning of SQP method
 ====================
