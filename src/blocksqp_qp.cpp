@@ -57,6 +57,7 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 
     //printf("max threads = %i\n", omp_get_max_threads());
     int saveNumThreads = omp_get_max_threads();
+    bool success = false;
     omp_set_num_threads( 2 );
     #pragma omp parallel for default(shared) private(i)
     for( i=0; i<maxQP; i++ )
@@ -104,28 +105,38 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                 stats->rejectedSR1++;
                 stats->qpResolve++;
             }
+
+            if( ret == qpOASES::SUCCESSFUL_RETURN )
+            {
+                success = true;
+                #pragma omp flush (success)
+            }
         }
         else if( i == 1 )
         {
-            // Convert 2nd Hessian to sparse format
-            vars->convertHessian( prob, param->eps, vars->hess2, vars->hessNz2,
-                                  vars->hessIndRow2, vars->hessIndCol2, vars->hessIndLo2 );
-            H2 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
-                                           vars->hessIndRow2, vars->hessIndCol2,
-                                           vars->hessNz2, vars->hessIndLo2 );
+            #pragma omp flush (success)
+            if( !success )
+            {
+                // Convert 2nd Hessian to sparse format
+                vars->convertHessian( prob, param->eps, vars->hess2, vars->hessNz2,
+                                      vars->hessIndRow2, vars->hessIndCol2, vars->hessIndLo2 );
+                H2 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
+                                               vars->hessIndRow2, vars->hessIndCol2,
+                                               vars->hessNz2, vars->hessIndLo2 );
 
-            // Call qpOASES for positive definite Hessian
-            qp2->setOptions( opts2 );
-            if( qp2->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp2->getStatus() == qpOASES::QPS_SOLVED )
-                ret2 = qp2->hotstart( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
-            else
-                ret2 = qp2->init( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
+                // Call qpOASES for positive definite Hessian
+                qp2->setOptions( opts2 );
+                if( qp2->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp2->getStatus() == qpOASES::QPS_SOLVED )
+                    ret2 = qp2->hotstart( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
+                else
+                    ret2 = qp2->init( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
 
-            // Statistics
-            if( ret2 == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
-                stats->qpIterations2 += 1;
-            else
-                stats->qpIterations2 += maxIt2 + 1;
+                // Statistics
+                if( ret2 == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
+                    stats->qpIterations2 += 1;
+                else
+                    stats->qpIterations2 += maxIt2 + 1;
+            }
         }
     }
     omp_set_num_threads( saveNumThreads );
