@@ -6,14 +6,21 @@ namespace blockSQP
 
 
 #ifdef QPSOLVER_QPOASES
-int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
+/**
+ * Always solve 2 QPs: one with the original, one with the fallback method
+ */
+int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 {
     #ifndef QPSOLVER_SPARSE
     printf( "solveQP2 not implemented for dense qpOASES. Abort.\n" );
     return 4;
     #endif
 
-    ///\todo solve 2 QPs in parallel, one for hess1, one for hess2
+    int i, maxQP = 1;
+    if( param->globalization == 1 && flag == 0 && stats->itCount > 1 )
+        if( param->hessUpdate == 1 || param->hessUpdate == 4 )
+            maxQP = 2;
+
     qpOASES::Matrix *A;
     qpOASES::SolutionAnalysis solAna;
     qpOASES::SymmetricMatrix *H1, *H2;
@@ -22,10 +29,13 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
     double *lb, *lu, *lbA, *luA;
     double cpuTime, cpuTime2;
     bool enableQPLoop = false;
-    int maxIt, maxIt2, success1;
+    int maxIt, maxIt2;
 
     // set options for qpOASES
-    opts.enableInertiaCorrection = qpOASES::BT_FALSE;
+    if( flag == 0 )
+        opts.enableInertiaCorrection = qpOASES::BT_FALSE;
+    else if( flag == 1 )
+        opts.enableInertiaCorrection = qpOASES::BT_TRUE;
     opts.enableEqualities = qpOASES::BT_TRUE;
     opts.initialStatusBounds = qpOASES::ST_INACTIVE;
     opts.printLevel = qpOASES::PL_NONE;
@@ -37,7 +47,8 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
     maxIt = maxIt2 = 5000;
 
     // Create Jacobian, is the same for both QPs
-    A = new qpOASES::SparseMatrix( prob->nCon, prob->nVar, vars->jacIndRow, vars->jacIndCol, vars->jacNz );
+    if( flag == 0 )
+        A = new qpOASES::SparseMatrix( prob->nCon, prob->nVar, vars->jacIndRow, vars->jacIndCol, vars->jacNz );
 
     // Set step bounds
     lb = vars->deltaBl.ARRAY();
@@ -46,21 +57,32 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
     lbA = vars->deltaBl.ARRAY() + prob->nVar;
     luA = vars->deltaBu.ARRAY() + prob->nVar;
 
-    for( int i=0; i<2; i++ )
+    //printf("max threads = %i\n", omp_get_max_threads());
+    #pragma omp parallel for default(shared) private(i)
+    for( i=0; i<maxQP; i++ )
     {
+        //printf("QP %i, process number: %i\n",i+1, omp_get_thread_num());
         if( i == 0 )
         {
-            // Convert 1st Hessian to sparse format
-            vars->convertHessian( prob, param->eps, vars->hessNz, vars->hessIndRow,
-                                  vars->hessIndCol, vars->hessIndLo );
-            H1 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
-                                           vars->hessIndRow, vars->hessIndCol,
-                                           vars->hessNz, vars->hessIndLo );
+            if( flag == 0 )
+            {
+                // Convert 1st Hessian to sparse format
+                vars->convertHessian( prob, param->eps, vars->hess1, vars->hessNz,
+                                      vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
+                H1 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
+                                               vars->hessIndRow, vars->hessIndCol,
+                                               vars->hessNz, vars->hessIndLo );
+            }
 
             // Call qpOASES for indefinite Hessian
             qp->setOptions( opts );
             if( qp->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp->getStatus() == qpOASES::QPS_SOLVED )
-                ret = qp->hotstart( H1, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
+            {
+                if( flag == 0 )
+                    ret = qp->hotstart( H1, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
+                else if( flag == 1 ) // Second order correction: H and A do not change
+                    ret = qp->hotstart( vars->gradObj.ARRAY(), lb, lu, lbA, luA, maxIt, &cpuTime );
+            }
             else
                 ret = qp->init( H1, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
 
@@ -71,15 +93,13 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
                 stats->qpIterations += maxIt + 1;
 
             // If the first QP was solved successfully check if assumption (G3*) is satisfied
-            success1 = 0;
-            if( ret == qpOASES::SUCCESSFUL_RETURN )
+            if( ret == qpOASES::SUCCESSFUL_RETURN && maxQP == 2 )
             {
                 // Remove some of the bounds. Is it still positive definite?
-                if( solAna.checkCurvatureOnStronglyActiveConstraints( qp ) == qpOASES::SUCCESSFUL_RETURN )
-                    ret = qpOASES::SUCCESSFUL_RETURN;
+                ret = solAna.checkCurvatureOnStronglyActiveConstraints( qp );
             }
 
-            if( ret != qpOASES::SUCCESSFUL_RETURN )
+            if( ret != qpOASES::SUCCESSFUL_RETURN && flag == 0 )
             {
                 stats->rejectedSR1++;
                 stats->qpResolve++;
@@ -87,14 +107,14 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
         }
         else if( i == 1 )
         {
-            // Convert 1st Hessian to sparse format
-            vars->convertHessian( prob, param->eps, vars->hessNz2, vars->hessIndRow2,
-                                  vars->hessIndCol2, vars->hessIndLo2 );
+            // Convert 2nd Hessian to sparse format
+            vars->convertHessian( prob, param->eps, vars->hess2, vars->hessNz2,
+                                  vars->hessIndRow2, vars->hessIndCol2, vars->hessIndLo2 );
             H2 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
                                            vars->hessIndRow2, vars->hessIndCol2,
                                            vars->hessNz2, vars->hessIndLo2 );
 
-            // Call qpOASES for indefinite Hessian
+            // Call qpOASES for positive definite Hessian
             qp2->setOptions( opts2 );
             if( qp2->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp2->getStatus() == qpOASES::QPS_SOLVED )
                 ret2 = qp2->hotstart( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
@@ -105,19 +125,19 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
             if( ret2 == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
                 stats->qpIterations2 += 1;
             else
-                stats->qpIterations2 += maxIt + 1;
+                stats->qpIterations2 += maxIt2 + 1;
         }
     }
 
     // If first QP was successful, take it, else take the result from fallback
-    if( ret == qpOASES::SUCCESSFUL_RETURN )
+    if( ret == qpOASES::SUCCESSFUL_RETURN || maxQP == 1 )
     {
-        qp2 = qp;
+        *qp2 = *qp;
         ret2 = ret;
     }
     else
     {
-        qp = qp2;
+        *qp = *qp2;
         ret = ret2;
     }
 
@@ -129,7 +149,7 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP )
     sparseAtimesb( vars->jacNz, vars->jacIndRow, vars->jacIndCol, deltaXi, vars->AdeltaXi );
 
     /* Print qpOASES error code (if postprocessQP is called, don't print error from first QP or SOC) */
-    if( ret != qpOASES::SUCCESSFUL_RETURN )
+    if( ret != qpOASES::SUCCESSFUL_RETURN && flag == 0 )
         printf( "solveQP: \"%s\"\n", qpOASES::getGlobalMessageHandler()->getErrorCodeMessage( ret ) );
 
     /* 0: Success
@@ -172,7 +192,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     // if filter line search, if QP is not a SOC, first iteration is pos def by construction
     if( param->globalization == 1 && flag == 0 && stats->itCount > 1 )
         // SR1 update or BFGS without damping
-        if( param->hessUpdate == 1 || (param->hessUpdate == 2 && !param->hessDamp) )
+        if( param->hessUpdate == 1 || param->hessUpdate == 4 || (param->hessUpdate == 2 && !param->hessDamp) )
             enableQPLoop = true;
 
     // set options for qpOASES
@@ -188,15 +208,15 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     if( flag == 0 )
         maxIt = 5000;
     else // don't want to spend too much time for second order correction
-        maxIt = 100;
+        maxIt = 5000;
 
     if( flag == 0 )
     {
 #ifdef QPSOLVER_SPARSE
         // Convert Hessian to sparse format
         //vars->convertHessian( prob, param->eps );
-        vars->convertHessian( prob, param->eps, vars->hessNz, vars->hessIndRow,
-                                  vars->hessIndCol, vars->hessIndLo );
+        vars->convertHessian( prob, param->eps, vars->hess, vars->hessNz,
+                              vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
                                        vars->hessIndRow, vars->hessIndCol,
                                        vars->hessNz, vars->hessIndLo );
@@ -372,15 +392,14 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         }
         else
         { // Full memory: set hess pointer to hess2, update is automatically maintained
-
             /// \todo convex combination is not yet implemented for the full memory case!
             vars->hess = vars->hess2;
         }
 
         // Convert Hessian to sparse format
         //vars->convertHessian( prob, param->eps );
-        vars->convertHessian( prob, param->eps, vars->hessNz, vars->hessIndRow,
-                                  vars->hessIndCol, vars->hessIndLo );
+        vars->convertHessian( prob, param->eps, vars->hess, vars->hessNz,
+                              vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar, vars->hessIndRow,
                                        vars->hessIndCol, vars->hessNz, vars->hessIndLo );
 

@@ -175,8 +175,8 @@ void SQPiterate::allocHess( SQPoptions *param )
  * Convert array *hess to a single symmetric sparse matrix in
  * Harwell-Boeing format (as used by qpOASES)
  */
-void SQPiterate::convertHessian( Problemspec *prob, double eps, double *&hessNz_,
-                                 int *&hessIndRow_, int *&hessIndCol_, int *&hessIndLo_ )
+void SQPiterate::convertHessian( Problemspec *prob, double eps, SymMatrix *&hess_,
+                                 double *&hessNz_, int *&hessIndRow_, int *&hessIndCol_, int *&hessIndLo_ )
 {
     int iBlock, count, colCountTotal, rowOffset, i, j;
     int nnz, nCols, nRows;
@@ -184,9 +184,9 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps, double *&hessNz_
     // 1) count nonzero elements
     nnz = 0;
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
-        for( i=0; i<hess[iBlock].N(); i++ )
-            for( j=i; j<hess[iBlock].N(); j++ )
-                if( fabs(hess[iBlock]( i,j )) > eps )
+        for( i=0; i<hess_[iBlock].N(); i++ )
+            for( j=i; j<hess_[iBlock].N(); j++ )
+                if( fabs(hess_[iBlock]( i,j )) > eps )
                 {
                     nnz++;
                     if( i != j )// off-diagonal elements count twice
@@ -207,8 +207,8 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps, double *&hessNz_
     rowOffset = 0;
     for( iBlock=0; iBlock<nBlocks; iBlock++ )
     {
-        nCols = hess[iBlock].N();
-        nRows = hess[iBlock].M();
+        nCols = hess_[iBlock].N();
+        nRows = hess_[iBlock].M();
 
         for( i=0; i<nCols; i++ )
         {
@@ -216,9 +216,9 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps, double *&hessNz_
             hessIndCol_[colCountTotal] = count;
 
             for( j=0; j<nRows; j++ )
-                if( fabs(hess[iBlock]( i,j )) > eps )
+                if( fabs(hess_[iBlock]( i,j )) > eps )
                 {
-                    hessNz_[count] = hess[iBlock]( i, j );
+                    hessNz_[count] = hess_[iBlock]( i, j );
                     hessIndRow_[count] = j + rowOffset;
                     count++;
                 }

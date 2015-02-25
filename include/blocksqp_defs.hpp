@@ -6,8 +6,8 @@
 #include "stdio.h"
 #include <set>
 
-
-#define MYDEBUG   ///< Print debug information (impairs performance)
+//#define MYDEBUG   ///< Print debug information (impairs performance)
+#define PARALLELQP ///< Always solve two QPs (in parallel)
 
 // Choice of QP solver
 //#define QPSOLVER_QPOPT

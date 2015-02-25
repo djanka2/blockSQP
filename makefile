@@ -29,12 +29,12 @@ LIBS       = -L $(LIBDIR) -Xlinker -rpath -Xlinker $(LIBDIR) \
              -lqpOASES \
              -llapack
 
-OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprecated -Wno-write-strings
+OPTIONS = -g -O0 -fPIC -fopenmp -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprecated -Wno-write-strings
 
 all: blockSQP
 
 library: $(OBJECTS) | $(LIBDIR)
-	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS)
+	g++ -shared -fopenmp -o $(LIBDIR)/libblockSQP.so $(OBJECTS)
 
 blockSQP: library $(OBJDIR)/blocksqp_driver.o
 	g++ -o blockSQP $(OBJDIR)/blocksqp_driver.o $(LIBS)

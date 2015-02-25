@@ -1,6 +1,7 @@
 #ifndef BLOCKSQP_HPP
 #define BLOCKSQP_HPP
 
+#include <omp.h>
 #include "blocksqp_defs.hpp"
 #include "blocksqp_matrix.hpp"
 #include "blocksqp_problemspec.hpp"
@@ -165,8 +166,8 @@ class SQPiterate
         void allocHess( SQPoptions* param );
         /// Convert *hess to column compressed sparse format
         //void convertHessian( Problemspec *prob, double eps );
-        void convertHessian( Problemspec *prob, double eps, double *&hessNz_,
-                             int *&hessIndRow_, int *&hessIndCol_, int *&hessIndLo_ );
+        void convertHessian( Problemspec *prob, double eps, SymMatrix *&hess_,
+                             double *&hessNz_, int *&hessIndRow_, int *&hessIndCol_, int *&hessIndLo_ );
         /// Allocate variables specifically needed by vmused SQP method
         void allocAlg( Problemspec* prob, SQPoptions* param );
         /// Set initial filter, objective function, tolerances etc.
@@ -297,7 +298,7 @@ class SQPmethod
         void updateStepBounds( bool soc );
         /// Solve a QP with QPOPT or qpOASES to obtain a step deltaXi and estimates for the Lagrange multipliers
         int solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag = 0 );
-        int solveQP2( Matrix &deltaXi, Matrix &lambdaQP );
+        int solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag = 0 );
         /// If filter line search with indefinite Hessians is used convexify QP and resolved if required
 #ifdef QPSOLVER_QPOASES
         qpOASES::returnValue QPLoop( qpOASES::Options opts, qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,

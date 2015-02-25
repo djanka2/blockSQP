@@ -104,8 +104,11 @@ int SQPmethod::run( int maxIt, int warmStart )
     {
         /// Solve QP subproblem with qpOASES or QPOPT
         updateStepBounds( 0 );
-        //infoQP = solveQP( vars->deltaXi, vars->lambdaQP );
+        #ifdef PARALLELQP
         infoQP = solveQP2( vars->deltaXi, vars->lambdaQP );
+        #else
+        infoQP = solveQP( vars->deltaXi, vars->lambdaQP );
+        #endif
 
         if( infoQP == 1 )
         {// 1.) Maximum number of iterations reached
@@ -116,7 +119,11 @@ int SQPmethod::run( int maxIt, int warmStart )
         {// 2.) QP error (e.g., unbounded), solve again with pos.def. diagonal matrix (identity)
             printf("***QP error. Solve again with identity matrix.***\n");
             resetHessian();
+            #ifdef PARALLELQP
+            infoQP = solveQP2( vars->deltaXi, vars->lambdaQP );
+            #else
             infoQP = solveQP( vars->deltaXi, vars->lambdaQP );
+            #endif
             if( infoQP )
             {// If there is still an error, terminate.
                 printf( "***QP error. Stop.***\n" );
@@ -266,6 +273,7 @@ int SQPmethod::run( int maxIt, int warmStart )
         else if( param->hessUpdate == 4 )
             calcFiniteDiffHessian( );
 
+        #ifdef PARALLELQP
         /// Compute fallback update
         /// \todo better interface for maintaining multiple Hessians
         if( (param->hessUpdate == 1 || param->hessUpdate == 4) )
@@ -277,6 +285,7 @@ int SQPmethod::run( int maxIt, int warmStart )
                 calcHessianUpdate( param->fallbackUpdate, param->fallbackScaling );
             vars->hess = vars->hess1;
         }
+        #endif
 
         // If limited memory updates  are used, set pointers deltaXi and gamma to the next column in deltaMat and gammaMat
         updateDeltaGamma();

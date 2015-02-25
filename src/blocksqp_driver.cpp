@@ -293,7 +293,7 @@ int main( int argc, const char* argv[] )
     opts->nlinfeastol = 1.0e-10;
 
     // 0: no globalization, 1: filter line search
-    opts->globalization = 0;
+    opts->globalization = 1;
     // 0: (scaled) identity, 1: SR1, 2: BFGS
     opts->hessUpdate = 4;
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
@@ -318,7 +318,7 @@ int main( int argc, const char* argv[] )
     meth = new SQPmethod( prob, opts, stats );
 
     ret = meth->init();
-    ret = meth->run( 1 );
+    ret = meth->run( 100 );
     meth->finish();
     if( ret == 1 )
         printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");
