@@ -29,7 +29,8 @@ LIBS       = -L $(LIBDIR) -Xlinker -rpath -Xlinker $(LIBDIR) \
              -lqpOASES \
              -llapack
 
-OPTIONS = -g -O0 -fPIC -fopenmp -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprecated -Wno-write-strings
+#OPTIONS = -g -O0 -fPIC -fopenmp -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprecated -Wno-write-strings
+OPTIONS = -O3 -fPIC -fopenmp -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) $(DEFS) -Wno-deprecated -Wno-write-strings
 
 all: blockSQP
 

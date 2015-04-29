@@ -68,15 +68,15 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
             printf("%5i  ", itCount );
             printf("%11i ", 0 );
             printf("% 10e  ", vars->obj );
-            printf("%-10.2e", vars->cNorm );
+            printf("%-10.2e", vars->cNormS );
             printf("%-10.2e", vars->tol );
             printf("\n");
         }
 
-#ifdef MYDEBUG
+#if (MYDEBUGLEVEL >= 1)
         // Print everything in a CSV file as well
         fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
-                 vars->obj, vars->cNorm, vars->tol, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0 );
+                 vars->obj, vars->cNormS, vars->tol, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0 );
 #endif
     }
     else
@@ -111,7 +111,7 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
             printf("%5i  ", itCount );
             printf("%5i+%5i ", qpIterations, qpIterations2 );
             printf("% 10e  ", vars->obj );
-            printf("%-10.2e", vars->cNorm );
+            printf("%-10.2e", vars->cNormS );
             printf("%-10.2e", vars->tol );
             if( param->printLevel > 1 )
             {
@@ -136,10 +136,10 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
             }
             printf("\n");
         }
-#ifdef MYDEBUG
+#if (MYDEBUGLEVEL >= 1)
         // Print everything in a CSV file as well
         fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %i, %23.16e, %i, %23.16e\n",
-                 vars->obj, vars->cNorm, vars->tol, vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
+                 vars->obj, vars->cNormS, vars->tol, vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
                  vars->lambdaStepNorm, vars->alpha, vars->nSOCS, hessSkipped, hessDamped, averageSizingFactor,
                  qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
 
@@ -178,7 +178,7 @@ void SQPstats::initStats()
 
     // Open files
 
-#ifdef MYDEBUG
+#if (MYDEBUGLEVEL >= 1)
     // SQP progress
     strcpy( filename, outpath );
     strcat( filename, "sqpits.csv" );
@@ -188,18 +188,20 @@ void SQPstats::initStats()
     strcpy( filename, outpath );
     strcat( filename, "updatesequence.txt" );
     updateFile = fopen( filename, "w" );
+#endif
 
+#if (MYDEBUGLEVEL >= 2)
     // Primal variables
     strcpy( filename, outpath );
-    strcat( filename, "pv.m" );
+    strcat( filename, "pv.csv" );
     primalVarsFile = fopen( filename, "w");
-    fprintf( primalVarsFile, "xi=[ " );
+    //fprintf( primalVarsFile, "xi=[ " );
 
     // Dual variables
     strcpy( filename, outpath );
-    strcat( filename, "dv.m" );
+    strcat( filename, "dv.csv" );
     dualVarsFile = fopen( filename, "w");
-    fprintf( dualVarsFile, "lambda=[ " );
+    //fprintf( dualVarsFile, "lambda=[ " );
 #endif
 
     itCount = 0;
@@ -217,8 +219,8 @@ void SQPstats::initStats()
 void SQPstats::printPrimalVars( const Matrix &xi )
 {
     for( int i=0; i<xi.M()-1; i++ )
-        fprintf( primalVarsFile, " %23.16e,", xi( i ) );
-    fprintf( primalVarsFile, " %23.16e;\n", xi( xi.M()-1 ) );
+        fprintf( primalVarsFile, "%23.16e ", xi( i ) );
+    fprintf( primalVarsFile, "%23.16e\n", xi( xi.M()-1 ) );
 }
 
 
@@ -228,15 +230,15 @@ void SQPstats::printPrimalVars( const Matrix &xi )
 void SQPstats::printDualVars( const Matrix &lambda )
 {
     for( int i=0; i<lambda.M()-1; i++ )
-        fprintf( dualVarsFile, " %23.16e,", lambda( i ) );
-    fprintf( dualVarsFile, " %23.16e;\n", lambda( lambda.M()-1 ) );
+        fprintf( dualVarsFile, "%23.16e ", lambda( i ) );
+    fprintf( dualVarsFile, "%23.16e\n", lambda( lambda.M()-1 ) );
 }
 
 
 /**
  * Print dense Hessian in a MATLAB file
  */
-void SQPstats::printHessian( int nBlocks, const SymMatrix *&hess )
+void SQPstats::printHessian( int nBlocks, SymMatrix *&hess )
 {
     PATHSTR filename;
     int offset, i, j, iBlock, nVar;
@@ -345,7 +347,7 @@ void SQPstats::printSparseMatlab( FILE *file, int nRow, int nCol, double *nz, in
 
 void SQPstats::printDebug( Problemspec *prob, SQPiterate *vars )
 {
-#ifdef MYDEBUG
+#if (MYDEBUGLEVEL >= 2)
     printPrimalVars( vars->xi );
     printDualVars( vars->lambda );
 #endif
@@ -357,15 +359,18 @@ void SQPstats::printDebug( Problemspec *prob, SQPiterate *vars )
  */
 void SQPstats::finish( Problemspec *prob, SQPiterate *vars )
 {
-#ifdef MYDEBUG
-    printDebug( prob, vars );
+#if (MYDEBUGLEVEL >= 1)
     fprintf( progressFile, "\n" );
     fclose( progressFile );
     fprintf( updateFile, "\n" );
     fclose( updateFile );
-    fprintf( primalVarsFile, "];\n" );
+#endif
+
+#if (MYDEBUGLEVEL >= 2)
+    //printDebug( prob, vars );
+    //fprintf( primalVarsFile, "];\n" );
     fclose( primalVarsFile );
-    fprintf( dualVarsFile, "];\n" );
+    //fprintf( dualVarsFile, "];\n" );
     fclose( dualVarsFile );
 #endif
 }

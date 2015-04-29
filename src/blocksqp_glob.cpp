@@ -97,7 +97,7 @@ int SQPmethod::fullstep()
         // Reduce step if evaluation fails, if lower bound is violated or if objective or a constraint is NaN
         if( info != 0 || objTrial < prob->objLo || objTrial > prob->objUp || !(objTrial == objTrial) || !(cNormTrial == cNormTrial) )
         {
-            //printf("info=%i, objTrial=%g\n", info, objTrial );
+            printf("info=%i, objTrial=%g\n", info, objTrial );
             // evaluation error, reduce stepsize
             reduceStepsize( &alpha );
             continue;
@@ -377,8 +377,10 @@ int SQPmethod::feasibilityRestorationPhase()
     restOpts->whichSecondDerv = 0;
     restOpts->restoreFeas = 0;
     restOpts->hessUpdate = 2;
-    restOpts->hessLimMem = 0;
+    restOpts->hessLimMem = 1;
     restOpts->hessScaling = 2;
+    restOpts->opttol = param->opttol;
+    restOpts->nlinfeastol = param->nlinfeastol;
 
     // Create and initialize the SQP method for the minimum norm NLP
     restMethod = new SQPmethod( restProb, restOpts, restStats );
@@ -414,10 +416,17 @@ int SQPmethod::feasibilityRestorationPhase()
             ret = 0;
             break;
         }
+
+        // If minimum norm NLP has converged, declare local infeasibility
+        if( restMethod->vars->tol < param->opttol && restMethod->vars->cNormS < param->nlinfeastol )
+        {
+            ret = 1;
+            break;
+        }
     }
 
-    // Success
-    if( ret == 0 )
+    // Success or locally infeasible
+    if( ret == 0 || ret == 1 )
     {
         // Store the infinity norm of the multiplier step
         vars->lambdaStepNorm = 0.0;
@@ -452,6 +461,12 @@ int SQPmethod::feasibilityRestorationPhase()
 
         // reset Hessian and limited memory information
         resetHessian();
+    }
+
+    if( ret == 1 )
+    {
+        stats->printProgress( prob, vars, param, 0 );
+        printf("The problem seems to be locally infeasible. Infeasibilities minimized.\n");
     }
 
     // Clean up
@@ -562,7 +577,7 @@ int SQPmethod::kktErrorReduction( )
     trialGradNorm = lInfVectorNorm( trialGradLagrange );
     trialTol = trialGradNorm /( 1.0 + lInfVectorNorm( vars->lambdaQP ) );
 
-    if( fmax( cNormTrial, trialTol ) < fmax( vars->cNorm, vars->tol ) )
+    if( fmax( cNormTrial, trialTol ) < param->kappaF * fmax( vars->cNorm, vars->tol ) )
     {
         acceptStep( 1.0 );
         return 0;

@@ -151,7 +151,8 @@ int SQPmethod::run( int maxIt, int warmStart )
             }
 
             // Invoke feasibility restoration phase
-            if( qpError && vars->steptype < 3 && param->restoreFeas )
+            //if( qpError && vars->steptype < 3 && param->restoreFeas )
+            if( qpError && param->restoreFeas && vars->cNorm > 0.01 * param->nlinfeastol )
             {
                 printf("***Start feasibility restoration phase.***\n");
                 vars->steptype = 3;
@@ -257,7 +258,10 @@ int SQPmethod::run( int maxIt, int warmStart )
             stats->itCount++;
             //printf("Computing finite differences Hessian at the solution ... \n");
             //calcFiniteDiffHessian( );
-            //stats->dumpQPCpp( prob, vars, qp );
+            //stats->printHessian( prob->nBlocks, vars->hess );
+            #if (MYDEBUGLEVEL >= 3)
+            stats->dumpQPCpp( prob, vars, qp );
+            #endif
             return 0; //Convergence achieved!
         }
 
@@ -283,6 +287,10 @@ int SQPmethod::run( int maxIt, int warmStart )
             if( !param->hessLimMem && param->hessUpdate == 4 )
                 calcHessianUpdate( param->fallbackUpdate, param->fallbackScaling );
             vars->hess = vars->hess1;
+            if( param->whichSecondDerv == 1 )
+                for( int i=0; i<vars->hess1[prob->nBlocks-1].M(); i++ )
+                    for( int j=0; j<vars->hess1[prob->nBlocks-1].M(); j++ )
+                        vars->hess2[prob->nBlocks-1](i,j) = vars->hess1[prob->nBlocks-1](i,j);
         }
         #endif
 
@@ -400,7 +408,7 @@ bool SQPmethod::calcOptTol()
     vars->cNorm  = lInfConstraintNorm( vars->xi, vars->constr, prob->bu, prob->bl );
     vars->cNormS = vars->cNorm /( 1.0 + lInfVectorNorm( vars->xi ) );
 
-    if( vars->tol <= param->opttol && vars->cNorm <= param->nlinfeastol )
+    if( vars->tol <= param->opttol && vars->cNormS <= param->nlinfeastol )
         return true;
     else
         return false;

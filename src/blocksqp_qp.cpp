@@ -42,11 +42,15 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     opts2 = opts;
     opts2.enableInertiaCorrection = qpOASES::BT_TRUE;
     cpuTime = cpuTime2 = 10000.0;
-    maxIt = maxIt2 = 5000;
 
     // Create Jacobian, is the same for both QPs
     if( flag == 0 )
+    {
+        maxIt = maxIt2 = 2500;
         A = new qpOASES::SparseMatrix( prob->nCon, prob->nVar, vars->jacIndRow, vars->jacIndCol, vars->jacNz );
+    }
+    else
+        maxIt = 100;
 
     // Set step bounds
     lb = vars->deltaBl.ARRAY();
@@ -85,7 +89,9 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                     ret = qp->hotstart( vars->gradObj.ARRAY(), lb, lu, lbA, luA, maxIt, &cpuTime );
             }
             else
+            {
                 ret = qp->init( H1, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt, &cpuTime );
+            }
 
             // Statistics
             if( ret == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
@@ -120,6 +126,7 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                 // Convert 2nd Hessian to sparse format
                 vars->convertHessian( prob, param->eps, vars->hess2, vars->hessNz2,
                                       vars->hessIndRow2, vars->hessIndCol2, vars->hessIndLo2 );
+
                 H2 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
                                                vars->hessIndRow2, vars->hessIndCol2,
                                                vars->hessNz2, vars->hessIndLo2 );
@@ -127,9 +134,13 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                 // Call qpOASES for positive definite Hessian
                 qp2->setOptions( opts2 );
                 if( qp2->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED || qp2->getStatus() == qpOASES::QPS_SOLVED )
+                {
                     ret2 = qp2->hotstart( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
+                }
                 else
+                {
                     ret2 = qp2->init( H2, vars->gradObj.ARRAY(), A, lb, lu, lbA, luA, maxIt2, &cpuTime2 );
+                }
 
                 // Statistics
                 if( ret2 == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
@@ -218,9 +229,9 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     cpuTime = 10000.0;
 
     if( flag == 0 )
-        maxIt = 5000;
+        maxIt = 2500;
     else // don't want to spend too much time for second order correction
-        maxIt = 5000;
+        maxIt = 100;
 
     if( flag == 0 )
     {
@@ -263,7 +274,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     lbA = vars->deltaBl.ARRAY() + prob->nVar;
     luA = vars->deltaBu.ARRAY() + prob->nVar;
 
-#ifdef MYDEBUG
+#if (MYDEBUGLEVEL >= 3)
     stats->dumpQPCpp( prob, vars, qp );
 #endif
 
@@ -336,7 +347,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
                                         double *g, qpOASES::Matrix *A, double *lb, double *lu, double *lbA, double *luA )
 {
-    int iQP, maxQP = 1, maxIt, hessDampSave;
+    int iQP, maxIt, hessDampSave;
     qpOASES::SymmetricMatrix *H;
     qpOASES::SolutionAnalysis solAna;
     qpOASES::returnValue retval;
@@ -356,55 +367,71 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
     stats->rejectedSR1++;
 
     /* If QP was not successfully solved or assumption (G3*) is violated, we have to convexify and re-solve */
-    for( iQP=0; iQP<maxQP; iQP++ )
+    for( iQP=0; iQP<param->maxConvQP; iQP++ )
     {
 
-        mu1 = (iQP+1.0) / maxQP;
+        mu1 = (iQP+1.0) / param->maxConvQP;
         mu2 = 1.0 - mu1;
 
-        /* 1.) New Hessian: (1-mu)*H_SR1 + mu*(scale*I) */
-        //stats->itCount--;
-        //calcHessianUpdateLimitedMemory( param->hessUpdate, param->hessScaling, mu1 );
-        //stats->itCount++;
-
-        /* 2.) New Hessian: (1-mu)*H_SR1 + mu*H_BFGS */
-        // fallback: damped BFGS update
-
-        // Limited memory: call update routine again, completely rebuild Hessian
-        if( param->hessLimMem )
-        {
-            stats->itCount--;
-            hessDampSave = param->hessDamp;
-            param->hessDamp = 1;
-            calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
-            param->hessDamp = hessDampSave;
-            stats->itCount++;
-
-            if( iQP != maxQP-1 )
+        if( param->fallbackUpdate == 0 )
+        {/* 1.) New Hessian: (1-mu)*H_SR1 + mu*(scale*I) */
+            if( param->hessLimMem )
             {
-                // Store BFGS Hessian
-                SymMatrix hessSave[vars->nBlocks];
-                for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
-                    hessSave[iBlock] = SymMatrix( vars->hess[iBlock] );
-
-                // SR1 update
                 stats->itCount--;
-                calcHessianUpdateLimitedMemory( param->hessUpdate, param->hessScaling );
+                calcHessianUpdateLimitedMemory( param->hessUpdate, param->hessScaling, mu1 );
                 stats->itCount++;
-
-                // Combine both
-                int i, j;
-                for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
-                    for( i=0; i<vars->hess[iBlock].M(); i++ )
-                        for( j=i; j<vars->hess[iBlock].N(); j++ )
-                            vars->hess[iBlock]( i, j ) = mu2*vars->hess[iBlock]( i, j ) +
-                                                         mu1*hessSave[iBlock]( i, j );
             }
+            else
+                printf( "Convex combination of SR1 and scaled identity not implemented for full-space Hessian!\n" );
         }
         else
-        { // Full memory: set hess pointer to hess2, update is automatically maintained
-            /// \todo convex combination is not yet implemented for the full memory case!
-            vars->hess = vars->hess2;
+        {/* 2.) New Hessian: (1-mu)*H_SR1 + mu*H_BFGS */
+
+            // Limited memory: call update routine again, completely rebuild Hessian
+            if( param->hessLimMem )
+            {
+                stats->itCount--;
+                hessDampSave = param->hessDamp;
+                param->hessDamp = 1;
+                calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
+                param->hessDamp = hessDampSave;
+                stats->itCount++;
+
+                if( iQP != param->maxConvQP-1 )
+                {
+                    // Store BFGS Hessian
+                    SymMatrix *hessSave;
+                    hessSave = new SymMatrix[vars->nBlocks];
+                    int i, j;
+                    for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+                    {
+                        hessSave[iBlock].Dimension(vars->hess[iBlock].M());
+                        for( i=0; i<vars->hess[iBlock].M(); i++ )
+                            for( j=i; j<vars->hess[iBlock].N(); j++ )
+                                hessSave[iBlock]( i, j ) = vars->hess[iBlock]( i, j );
+                    }
+
+                    // SR1 update
+                    stats->itCount--;
+                    calcHessianUpdateLimitedMemory( param->hessUpdate, param->hessScaling );
+                    stats->itCount++;
+
+                    // Combine both
+
+                    for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+                        for( i=0; i<vars->hess[iBlock].M(); i++ )
+                            for( j=i; j<vars->hess[iBlock].N(); j++ )
+                                vars->hess[iBlock]( i, j ) = mu2*vars->hess[iBlock]( i, j ) +
+                                                             mu1*hessSave[iBlock]( i, j );
+
+                    //delete hessSave;
+                }
+            }
+            else
+            { // Full memory: set hess pointer to hess2, update is automatically maintained
+                /// \todo convex combination is not yet implemented for the full memory case!
+                vars->hess = vars->hess2;
+            }
         }
 
         // Convert Hessian to sparse format
@@ -414,15 +441,15 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar, vars->hessIndRow,
                                        vars->hessIndCol, vars->hessNz, vars->hessIndLo );
 
-        #ifdef MYDEBUG
+        #if (MYDEBUGLEVEL >= 3)
         stats->dumpQPCpp( prob, vars, qp );
         #endif
 
         // Solve QP: Warmstart with the last successfully solved QP
-        maxIt = 5000;
+        maxIt = 2500;
         cpuTime = 10000.0;
         *qp = qpSave;
-        if( iQP == maxQP-1 )
+        if( iQP == param->maxConvQP-1 )
         {   // Just to be safe in case there are neg eigenvalues due to ill-conditioning, switch on inertia correction
             opts.enableInertiaCorrection = qpOASES::BT_TRUE;
             qp->setOptions( opts );
@@ -441,7 +468,7 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
             vars->hess = vars->hess1;
 
         // Last Hessian is positive definite by construction, don't need to test
-        if( iQP != maxQP-1 )
+        if( iQP != param->maxConvQP-1 )
         {
             // Check if assumption (G3*) is satisfied
             if( retval == qpOASES::SUCCESSFUL_RETURN )
@@ -464,7 +491,7 @@ qpOASES::returnValue SQPmethod::postprocessQP_Id( qpOASES::returnValue ret, Matr
                                                   qpOASES::SymmetricMatrix *H, double *g, qpOASES::Matrix *A,
                                                   double *lb, double *lu, double *lbA, double *luA )
 {
-    int iQP, maxQP = 10, maxIt;
+    int iQP, maxIt;
     qpOASES::SolutionAnalysis solAna;
     qpOASES::returnValue retval;
     stats->qpResolve = 0;
@@ -479,7 +506,7 @@ qpOASES::returnValue SQPmethod::postprocessQP_Id( qpOASES::returnValue ret, Matr
     }
 
     /* If QP was not successfully solved or assumption (G3*) is violated, we have to convexify and re-solve */
-    for( iQP=0; iQP<maxQP; iQP++ )
+    for( iQP=0; iQP<param->maxConvQP; iQP++ )
     {
         // Set convexification parameter
         if( iQP == 0 )
@@ -504,12 +531,12 @@ qpOASES::returnValue SQPmethod::postprocessQP_Id( qpOASES::returnValue ret, Matr
         H->addToDiag( deltaH );
         //printf("deltaH = %23.16e\n", deltaH );
 
-        #ifdef MYDEBUG
+        #if (MYDEBUGLEVEL >= 3)
         stats->dumpQPCpp( prob, vars, qp );
         #endif
 
         // Solve QP
-        maxIt = 3000;
+        maxIt = 2500;
         cpuTime = 10000.0;
 
         // Warmstart with the last successfully solved QP

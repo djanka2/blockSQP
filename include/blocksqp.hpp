@@ -46,6 +46,7 @@ class SQPoptions
         int hessMemsize;                    ///< Memory size for L-BFGS updates
         int whichSecondDerv;                ///< For which block should second derivatives be provided by the user
         bool skipFirstGlobalization;        ///< If set to true, no globalization strategy in first iteration is applied
+        int maxConvQP;                      ///< How many additional QPs may be solved for convexification per iteration?
 
         /* Filter line search parameters */
         int maxSOCiter;                     ///< Maximum number of SOC line search iterations
@@ -225,7 +226,7 @@ class SQPstats
         void printJacobian( const Matrix &constrJacFull );
         void printJacobian( int nCon, int nVar, double *jacNz, int *jacIndRow, int *jacIndCol );
         /// Print current (full) Hessian to Matlab file
-        void printHessian( int nBlocks, const SymMatrix *&hess );
+        void printHessian( int nBlocks, SymMatrix *&hess );
         void printHessian( int nVar, double *hesNz, int *hesIndRow, int *hesIndCol );
         /// Print a sparse Matrix in (column compressed) to a MATLAB readable file
         void printSparseMatlab( FILE *file, int nRow, int nVar, double *nz, int *indRow, int *indCol );

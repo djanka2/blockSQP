@@ -59,6 +59,9 @@ SQPoptions::SQPoptions()
     hessUpdate = 1;
     fallbackUpdate = 2;
 
+    // How many ADDITIONAL (convexified) QPs may be solved per iteration?
+    maxConvQP = 1;
+
     // 0: full memory updates 1: limited memory
     hessLimMem = 1;
 
@@ -66,7 +69,7 @@ SQPoptions::SQPoptions()
     hessMemsize = 20;
 
     // maximum number of line search iterations
-    maxLineSearch = 30;
+    maxLineSearch = 20;
 
     // if step has to be reduced in too many consecutive iterations, feasibility restoration phase is invoked
     maxConsecReducedSteps = 100;

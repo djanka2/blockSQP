@@ -87,7 +87,7 @@ int SQPmethod::calcFiniteDiffHessian()
     SQPiterate varsP = SQPiterate( *vars );
 
     const double myDelta = 1.0e-4;
-    const double minDelta = 1.0e-8;
+    const double minDelta = 1.0e-6;
 
     pert.Dimension( prob->nVar );
 
@@ -114,7 +114,7 @@ int SQPmethod::calcFiniteDiffHessian()
             if( idx < vars->blockIdx[iBlock+1] )
             {
                 pert( idx ) = myDelta * fabs( vars->xi( idx ) );
-                pert( idx ) = fmax( myDelta, minDelta );
+                pert( idx ) = fmax( pert( idx ), minDelta );
 
                 // If perturbation violates upper bound, try to perturb with negative
                 upperVio = vars->xi( idx ) + pert( idx ) - prob->bu( idx );
@@ -490,11 +490,24 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
                 for( j=i; j<vars->hess[iBlock].M(); j++ )
                     vars->hess[iBlock]( i,j ) *= fac1;
 
-            fac2 = adotb( deltai, gammai );
-            if( fac2 > 0.0 )
-                fac2 = adotb( gammai, gammai ) / fmax( fac2, myEps );
-            else
-                fac2 = 1.0;
+            if( param->fallbackScaling == 1 )
+            {
+                fac2 = adotb( deltai, gammai );
+                if( fac2 > 0.0 )
+                    fac2 = adotb( gammai, gammai ) / fmax( fac2, myEps );
+                else
+                    fac2 = 1.0;
+            }
+            else if( param->fallbackScaling == 2 )
+            {
+                fac2 = adotb( deltai, deltai );
+                if( fac2 > 0.0 )
+                    fac2 = adotb( gammai, deltai ) / fmax( fac2, myEps );
+                else
+                    fac2 = 1.0;
+            }
+            else if( param->fallbackScaling > 2 )
+                printf( "fallbackScaling = %i not supported!\n", param->fallbackScaling );
 
             for( i=0; i<vars->hess[iBlock].M(); i++ )
                 vars->hess[iBlock]( i,i ) += fac2;
