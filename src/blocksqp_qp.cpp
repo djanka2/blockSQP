@@ -75,8 +75,7 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                 vars->convertHessian( prob, param->eps, vars->hess1, vars->hessNz,
                                       vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
                 H1 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
-                                               vars->hessIndRow, vars->hessIndCol,
-                                               vars->hessNz, vars->hessIndLo );
+                                               vars->hessIndRow, vars->hessIndCol, vars->hessNz );
             }
 
             // Call qpOASES for indefinite Hessian
@@ -129,7 +128,7 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 
                 H2 = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
                                                vars->hessIndRow2, vars->hessIndCol2,
-                                               vars->hessNz2, vars->hessIndLo2 );
+                                               vars->hessNz2 );
 
                 // Call qpOASES for positive definite Hessian
                 qp2->setOptions( opts2 );
@@ -242,7 +241,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                               vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
                                        vars->hessIndRow, vars->hessIndCol,
-                                       vars->hessNz, vars->hessIndLo );
+                                       vars->hessNz );
 
         A = new qpOASES::SparseMatrix( prob->nCon, prob->nVar, vars->jacIndRow, vars->jacIndCol, vars->jacNz );
 #else
@@ -439,7 +438,7 @@ qpOASES::returnValue SQPmethod::QPLoop( qpOASES::Options opts, qpOASES::returnVa
         vars->convertHessian( prob, param->eps, vars->hess, vars->hessNz,
                               vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
         H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar, vars->hessIndRow,
-                                       vars->hessIndCol, vars->hessNz, vars->hessIndLo );
+                                       vars->hessIndCol, vars->hessNz );
 
         #if (MYDEBUGLEVEL >= 3)
         stats->dumpQPCpp( prob, vars, qp );
