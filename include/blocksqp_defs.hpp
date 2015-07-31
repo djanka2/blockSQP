@@ -14,6 +14,8 @@
 //#define QPSOLVER_QPOASES_SPARSE
 #define QPSOLVER_QPOASES_SCHUR
 
+#define NEWQPLOOP
+
 /*--------------------------------------------------------------------*/
 
 #include "qpOASES.hpp"

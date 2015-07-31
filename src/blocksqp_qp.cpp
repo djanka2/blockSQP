@@ -4,6 +4,229 @@
 namespace blockSQP
 {
 
+#ifdef NEWQPLOOP
+/**
+ * Inner loop of SQP algorithm:
+ * Solve a sequence of QPs until pos. def. assumption is satisfied.
+ */
+int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
+{
+    int l, maxQP = 1;
+    if( param->globalization == 1 && flag == 0 && stats->itCount > 1 )
+        if( param->hessUpdate == 1 || param->hessUpdate == 4 )
+            maxQP = 2;
+
+    /*
+     * Prepare for qpOASES
+     */
+
+    // Setup QProblem data
+    qpOASES::Matrix *A;
+    qpOASES::SymSparseMat *H;
+    if( flag == 0 )
+        A = new qpOASES::SparseMatrix( prob->nCon, prob->nVar,
+                             vars->jacIndRow, vars->jacIndCol, vars->jacNz );
+    double *g = vars->gradObj.ARRAY();
+    double *lb = vars->deltaBl.ARRAY();
+    double *lu = vars->deltaBu.ARRAY();
+    double *lbA = vars->deltaBl.ARRAY() + prob->nVar;
+    double *luA = vars->deltaBu.ARRAY() + prob->nVar;
+
+    // Save active set from the last successful iteration
+    qpOASES::Bounds B;
+    qp->getBounds( B );
+    qpOASES::Constraints C;
+    qp->getConstraints( C );
+
+    // qpOASES options
+    qpOASES::Options opts;
+    if( flag == 0 && maxQP == 2 )
+        opts.enableInertiaCorrection = qpOASES::BT_FALSE;
+    else
+        opts.enableInertiaCorrection = qpOASES::BT_TRUE;
+    opts.enableEqualities = qpOASES::BT_TRUE;
+    opts.initialStatusBounds = qpOASES::ST_INACTIVE;
+    opts.printLevel = qpOASES::PL_NONE;
+    opts.numRefinementSteps = 2;
+    opts.epsLITests =  2.2204e-08;
+    qp->setOptions( opts );
+
+    /// \todo only need active set
+    // Store last successful QP in temporary storage
+    qpSave = *qp;
+
+    // Other variables for qpOASES
+    double cpuTime = 10000.0;
+    int maxIt = (flag==0) ? 2500 : 100;
+    qpOASES::SolutionAnalysis solAna;
+    qpOASES::returnValue ret;
+
+    /*
+     * QP solving loop for convex combinations (sequential)
+     */
+    vars->hess = vars->hess1;
+    for( l=0; l<maxQP; l++ )
+    {
+        /*
+         * Set Hessian
+         */
+        if( l > 0 )
+        {// If the solution of the first QP was rejected, consider second Hessian
+            stats->qpResolve++;
+            *qp = qpSave;
+
+            // Compute fallback update only once
+            if( l == 1 )
+            {
+                vars->hess = vars->hess2;
+
+                // Limited memory: compute fallback update only when needed
+                if( param->hessLimMem )
+                {
+                    stats->itCount--;
+                    int hessDampSave = param->hessDamp;
+                    param->hessDamp = 1;
+                    calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
+                    param->hessDamp = hessDampSave;
+                    stats->itCount++;
+                }
+                // Full memory: both updates must be computed in every iteration
+            }
+
+            // 'Nontrivial' convex combinations
+            if( maxQP > 2 )
+            {
+                /* Convexification parameter: mu_l = l / (maxQP-1).
+                 * Compute it only in the first iteration, afterwards update
+                 * by recursion: mu_l/mu_(l-1) */
+                double mu = (l==1) ? 1.0 / (maxQP-1) : ((double) l)/((double) (l-1));
+                double mu1 = 1.0 - mu;
+                for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+                    for( int i=0; i<vars->hess[iBlock].M(); i++ )
+                        for( int j=i; j<vars->hess[iBlock].N(); j++ )
+                        {
+                            vars->hess2[iBlock]( i,j ) *= mu;
+                            vars->hess2[iBlock]( i,j ) += mu1 * vars->hess1[iBlock]( i,j );
+                        }
+            }
+        }
+
+        /*
+         * Call qpOASES
+         */
+        if( flag == 0 )
+        {
+            // Set sparse Hessian
+            vars->convertHessian( prob, param->eps, vars->hess, vars->hessNz,
+                              vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
+            H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
+                                       vars->hessIndRow, vars->hessIndCol, vars->hessNz );
+            H->createDiagInfo();
+
+            // Call qpOASES
+            qp->setOptions( opts );
+            if( qp->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED ||
+                qp->getStatus() == qpOASES::QPS_SOLVED )
+            {
+                ret = qp->hotstart( H, g, A, lb, lu, lbA, luA, maxIt, &cpuTime );
+            }
+            else
+                ret = qp->init( H, g, A, lb, lu, lbA, luA, maxIt, &cpuTime );
+        }
+        else if( flag == 1 ) // Second order correction: H and A do not change
+            ret = qp->hotstart( g, lb, lu, lbA, luA, maxIt, &cpuTime );
+
+        /*
+         * Check assumption (G3*) if nonconvex QP was solved
+         */
+        if( l < maxQP-1 && flag == 0 )
+        {
+            // QP was solved successfully and positive curvature after removing bounds
+            if( ret == qpOASES::SUCCESSFUL_RETURN &&
+                solAna.checkCurvatureOnStronglyActiveConstraints( qp ) == qpOASES::SUCCESSFUL_RETURN )
+            {
+                stats->qpIterations = maxIt + 1;
+                break;
+            }
+            else
+            {
+                // Statistics: save iterations from unsuccessful QP
+                if( ret == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
+                    stats->qpIterations2++;
+                else
+                    stats->qpIterations2 += maxIt + 1;
+                // Count total number of rejected SR1 updates
+                stats->rejectedSR1++;
+            }
+        }
+        else // Convex QP was solved
+            stats->qpIterations = maxIt + 1;
+
+    } // End of QP solving loop
+
+    // Point Hessian again to the desired Hessian
+    vars->hess = vars->hess1;
+
+    // For full Hessian: Restore fallback Hessian if convex combinations
+    // were used during the loop
+    if( !param->hessLimMem && maxQP > 2 && flag == 0 )
+    {
+        double mu = 1.0 / ((double) (l));
+        double mu1 = 1.0 - mu;
+        for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+            for( int i=0; i<vars->hess[iBlock].M(); i++ )
+                for( int j=i; j<vars->hess[iBlock].N(); j++ )
+                {
+                    vars->hess2[iBlock]( i,j ) *= mu;
+                    vars->hess2[iBlock]( i,j ) += mu1 * vars->hess1[iBlock]( i,j );
+                }
+    }
+
+    /*
+     * Post-processing
+     */
+
+    // Read solution
+    qp->getPrimalSolution( deltaXi.ARRAY() );
+    qp->getDualSolution( lambdaQP.ARRAY() );
+    vars->qpObj = qp->getObjVal();
+
+    // Compute constrJac*deltaXi, need this for second order correction step
+    #ifdef QPSOLVER_SPARSE
+    sparseAtimesb( vars->jacNz, vars->jacIndRow, vars->jacIndCol, deltaXi, vars->AdeltaXi );
+    #else
+    Atimesb( vars->constrJac, deltaXi, vars->AdeltaXi );
+    #endif
+
+    // Print qpOASES error code, if any
+    if( ret != qpOASES::SUCCESSFUL_RETURN && flag == 0 )
+        printf( "qpOASES error message: \"%s\"\n", qpOASES::getGlobalMessageHandler()->getErrorCodeMessage( ret ) );
+
+    // Return code depending on qpOASES returnvalue
+    /* 0: Success
+     * 1: Maximum number of iterations reached
+     * 2: Unbounded
+     * 3: Infeasible
+     * 4: Other error */
+    if( ret == qpOASES::SUCCESSFUL_RETURN )
+        return 0;
+    else if( ret == qpOASES::RET_MAX_NWSR_REACHED )
+        return 1;
+    else if( ret == qpOASES::RET_HESSIAN_NOT_SPD ||
+             ret == qpOASES::RET_HESSIAN_INDEFINITE ||
+             ret == qpOASES::RET_INIT_FAILED_UNBOUNDEDNESS ||
+             ret == qpOASES::RET_QP_UNBOUNDED ||
+             ret == qpOASES::RET_HOTSTART_STOPPED_UNBOUNDEDNESS )
+        return 2;
+    else if( ret == qpOASES::RET_INIT_FAILED_INFEASIBILITY ||
+             ret == qpOASES::RET_QP_INFEASIBLE ||
+             ret == qpOASES::RET_HOTSTART_STOPPED_INFEASIBILITY )
+        return 3;
+    else
+        return 4;
+}
+#endif
+
 /**
  * Always solve 2 QPs: one with the original, one with the fallback method
  */
@@ -193,6 +416,7 @@ int SQPmethod::solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 }
 
 
+#ifndef NEWQPLOOP
 /**
  * Call external solver qpOASES. The classes and methods are declared in qpOASES.hpp
  * flag = 0: First QP in a major iteration (default)
@@ -340,6 +564,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     else
         return 4;
 }
+#endif
 
 
 #ifdef QPSOLVER_QPOASES_SCHUR

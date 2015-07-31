@@ -97,7 +97,7 @@ int SQPmethod::run( int maxIt, int warmStart )
     }
 
     /*
-     * SQP Loop: first iteration has itCount = 1
+     * SQP Loop: during first iteration, stats->itCount = 1
      */
     for( it=0; it<maxIt; it++ )
     {
@@ -256,10 +256,10 @@ int SQPmethod::run( int maxIt, int warmStart )
         if( hasConverged && vars->steptype < 2 )
         {
             stats->itCount++;
+            #if (MYDEBUGLEVEL >= 3)
             //printf("Computing finite differences Hessian at the solution ... \n");
             //calcFiniteDiffHessian( );
             //stats->printHessian( prob->nBlocks, vars->hess );
-            #if (MYDEBUGLEVEL >= 3)
             stats->dumpQPCpp( prob, vars, qp );
             #endif
             return 0; //Convergence achieved!
@@ -275,24 +275,6 @@ int SQPmethod::run( int maxIt, int warmStart )
             calcHessianUpdateLimitedMemory( param->hessUpdate, param->hessScaling );
         else if( param->hessUpdate == 4 )
             calcFiniteDiffHessian( );
-
-        #ifdef PARALLELQP
-        /// Compute fallback update
-        /// \todo better interface for maintaining multiple Hessians
-        if( (param->hessUpdate == 1 || param->hessUpdate == 4) && param->globalization == 1 )
-        {
-            vars->hess = vars->hess2;
-            if( param->hessLimMem )
-                calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
-            if( !param->hessLimMem && param->hessUpdate == 4 )
-                calcHessianUpdate( param->fallbackUpdate, param->fallbackScaling );
-            vars->hess = vars->hess1;
-            if( param->whichSecondDerv == 1 )
-                for( int i=0; i<vars->hess1[prob->nBlocks-1].M(); i++ )
-                    for( int j=0; j<vars->hess1[prob->nBlocks-1].M(); j++ )
-                        vars->hess2[prob->nBlocks-1](i,j) = vars->hess1[prob->nBlocks-1](i,j);
-        }
-        #endif
 
         // If limited memory updates  are used, set pointers deltaXi and gamma to the next column in deltaMat and gammaMat
         updateDeltaGamma();
