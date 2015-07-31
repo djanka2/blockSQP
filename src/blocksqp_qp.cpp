@@ -64,7 +64,6 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     /*
      * QP solving loop for convex combinations (sequential)
      */
-    vars->hess = vars->hess1;
     for( l=0; l<maxQP; l++ )
     {
         /*
@@ -83,12 +82,20 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
                 // Limited memory: compute fallback update only when needed
                 if( param->hessLimMem )
                 {
+                    // If last block contains exact Hessian, we need to copy it
+                    if( param->whichSecondDerv == 1 )
+                        for( int i=0; i<vars->hess[prob->nBlocks-1].M(); i++ )
+                            for( int j=i; j<vars->hess[prob->nBlocks-1].N(); j++ )
+                                vars->hess2[prob->nBlocks-1]( i,j ) = vars->hess1[prob->nBlocks-1]( i,j );
+
                     stats->itCount--;
                     int hessDampSave = param->hessDamp;
                     param->hessDamp = 1;
                     calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
                     param->hessDamp = hessDampSave;
                     stats->itCount++;
+
+
                 }
                 // Full memory: both updates must be computed in every iteration
             }
@@ -124,7 +131,6 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
             H->createDiagInfo();
 
             // Call qpOASES
-            qp->setOptions( opts );
             if( qp->getStatus() == qpOASES::QPS_HOMOTOPYQPSOLVED ||
                 qp->getStatus() == qpOASES::QPS_SOLVED )
             {
@@ -160,27 +166,9 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
             }
         }
         else // Convex QP was solved
-            stats->qpIterations = maxIt + 1;
+            stats->qpIterations += maxIt + 1;
 
     } // End of QP solving loop
-
-    // Point Hessian again to the desired Hessian
-    vars->hess = vars->hess1;
-
-    // For full Hessian: Restore fallback Hessian if convex combinations
-    // were used during the loop
-    if( !param->hessLimMem && maxQP > 2 && flag == 0 )
-    {
-        double mu = 1.0 / ((double) (l));
-        double mu1 = 1.0 - mu;
-        for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
-            for( int i=0; i<vars->hess[iBlock].M(); i++ )
-                for( int j=i; j<vars->hess[iBlock].N(); j++ )
-                {
-                    vars->hess2[iBlock]( i,j ) *= mu;
-                    vars->hess2[iBlock]( i,j ) += mu1 * vars->hess1[iBlock]( i,j );
-                }
-    }
 
     /*
      * Post-processing
@@ -201,6 +189,24 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
     // Print qpOASES error code, if any
     if( ret != qpOASES::SUCCESSFUL_RETURN && flag == 0 )
         printf( "qpOASES error message: \"%s\"\n", qpOASES::getGlobalMessageHandler()->getErrorCodeMessage( ret ) );
+
+    // Point Hessian again to the desired Hessian
+    vars->hess = vars->hess1;
+
+    // For full Hessian: Restore fallback Hessian if convex combinations
+    // were used during the loop
+    if( !param->hessLimMem && maxQP > 2 && flag == 0 )
+    {
+        double mu = 1.0 / ((double) (l));
+        double mu1 = 1.0 - mu;
+        for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+            for( int i=0; i<vars->hess[iBlock].M(); i++ )
+                for( int j=i; j<vars->hess[iBlock].N(); j++ )
+                {
+                    vars->hess2[iBlock]( i,j ) *= mu;
+                    vars->hess2[iBlock]( i,j ) += mu1 * vars->hess1[iBlock]( i,j );
+                }
+    }
 
     // Return code depending on qpOASES returnvalue
     /* 0: Success
