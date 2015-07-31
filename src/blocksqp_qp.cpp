@@ -7,14 +7,14 @@ namespace blockSQP
 #ifdef NEWQPLOOP
 /**
  * Inner loop of SQP algorithm:
- * Solve a sequence of QPs until pos. def. assumption is satisfied.
+ * Solve a sequence of QPs until pos. def. assumption (G3*) is satisfied.
  */
 int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 {
     int l, maxQP = 1;
-    if( param->globalization == 1 && flag == 0 && stats->itCount > 1 )
-        if( param->hessUpdate == 1 || param->hessUpdate == 4 )
-            maxQP = 2;
+    if( param->globalization == 1 && param->hessUpdate == 1 &&
+        flag == 0 && stats->itCount > 1 )
+            maxQP = param->maxConvQP + 1;
 
     /*
      * Prepare for qpOASES
@@ -73,29 +73,28 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
         {// If the solution of the first QP was rejected, consider second Hessian
             stats->qpResolve++;
             *qp = qpSave;
-
+///\todo Funktion getNextHessian(l,maxQP)
             // Compute fallback update only once
             if( l == 1 )
             {
+                // Switch storage
                 vars->hess = vars->hess2;
+
+                // If last block contains exact Hessian, we need to copy it
+                if( param->whichSecondDerv == 1 )
+                    for( int i=0; i<vars->hess[prob->nBlocks-1].M(); i++ )
+                        for( int j=i; j<vars->hess[prob->nBlocks-1].N(); j++ )
+                            vars->hess2[prob->nBlocks-1]( i,j ) = vars->hess1[prob->nBlocks-1]( i,j );
 
                 // Limited memory: compute fallback update only when needed
                 if( param->hessLimMem )
                 {
-                    // If last block contains exact Hessian, we need to copy it
-                    if( param->whichSecondDerv == 1 )
-                        for( int i=0; i<vars->hess[prob->nBlocks-1].M(); i++ )
-                            for( int j=i; j<vars->hess[prob->nBlocks-1].N(); j++ )
-                                vars->hess2[prob->nBlocks-1]( i,j ) = vars->hess1[prob->nBlocks-1]( i,j );
-
                     stats->itCount--;
                     int hessDampSave = param->hessDamp;
                     param->hessDamp = 1;
                     calcHessianUpdateLimitedMemory( param->fallbackUpdate, param->fallbackScaling );
                     param->hessDamp = hessDampSave;
                     stats->itCount++;
-
-
                 }
                 // Full memory: both updates must be computed in every iteration
             }
@@ -123,7 +122,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
          */
         if( flag == 0 )
         {
-            // Set sparse Hessian
+            // Convert block-Hessian to sparse format
             vars->convertHessian( prob, param->eps, vars->hess, vars->hessNz,
                               vars->hessIndRow, vars->hessIndCol, vars->hessIndLo );
             H = new qpOASES::SymSparseMat( prob->nVar, prob->nVar,
@@ -147,25 +146,22 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
          */
         if( l < maxQP-1 && flag == 0 )
         {
-            // QP was solved successfully and positive curvature after removing bounds
             if( ret == qpOASES::SUCCESSFUL_RETURN &&
                 solAna.checkCurvatureOnStronglyActiveConstraints( qp ) == qpOASES::SUCCESSFUL_RETURN )
-            {
+            {// QP was solved successfully and curvature is positive after removing bounds
                 stats->qpIterations = maxIt + 1;
-                break;
+                break; // Success!
             }
             else
-            {
-                // Statistics: save iterations from unsuccessful QP
+            {// QP solution is rejected, save statistics
                 if( ret == qpOASES::RET_SETUP_AUXILIARYQP_FAILED )
                     stats->qpIterations2++;
                 else
                     stats->qpIterations2 += maxIt + 1;
-                // Count total number of rejected SR1 updates
                 stats->rejectedSR1++;
             }
         }
-        else // Convex QP was solved
+        else // Convex QP was solved, no need to check assumption (G3*)
             stats->qpIterations += maxIt + 1;
 
     } // End of QP solving loop
@@ -174,7 +170,7 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
      * Post-processing
      */
 
-    // Read solution
+    // Get solution from qpOASES
     qp->getPrimalSolution( deltaXi.ARRAY() );
     qp->getDualSolution( lambdaQP.ARRAY() );
     vars->qpObj = qp->getObjVal();
@@ -188,18 +184,20 @@ int SQPmethod::solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag )
 
     // Print qpOASES error code, if any
     if( ret != qpOASES::SUCCESSFUL_RETURN && flag == 0 )
-        printf( "qpOASES error message: \"%s\"\n", qpOASES::getGlobalMessageHandler()->getErrorCodeMessage( ret ) );
+        printf( "qpOASES error message: \"%s\"\n",
+                qpOASES::getGlobalMessageHandler()->getErrorCodeMessage( ret ) );
 
-    // Point Hessian again to the desired Hessian
+    // Point Hessian again to the first Hessian
     vars->hess = vars->hess1;
 
-    // For full Hessian: Restore fallback Hessian if convex combinations
+    // For full-memory Hessian: Restore fallback Hessian if convex combinations
     // were used during the loop
     if( !param->hessLimMem && maxQP > 2 && flag == 0 )
     {
         double mu = 1.0 / ((double) (l));
         double mu1 = 1.0 - mu;
-        for( int iBlock=0; iBlock<vars->nBlocks; iBlock++ )
+        int nBlocks = (param->whichSecondDerv == 1) ? vars->nBlocks-1 : vars->nBlocks;
+        for( int iBlock=0; iBlock<nBlocks; iBlock++ )
             for( int i=0; i<vars->hess[iBlock].M(); i++ )
                 for( int j=i; j<vars->hess[iBlock].N(); j++ )
                 {
