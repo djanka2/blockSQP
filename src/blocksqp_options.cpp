@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 
 namespace blockSQP
@@ -9,10 +17,19 @@ namespace blockSQP
  */
 SQPoptions::SQPoptions()
 {
+    /* qpOASES: dense (0), sparse (1), or Schur (2)
+     * Choice of qpOASES method:
+     * 0: dense Hessian and Jacobian, dense factorization of reduced Hessian
+     * 1: sparse Hessian and Jacobian, dense factorization of reduced Hessian
+     * 2: sparse Hessian and Jacobian, Schur complement approach (recommended) */
+    sparseQP = 2;
+
     // 0: no output, 1: normal output, 2: verbose output
     printLevel = 2;
     // 1: (some) colorful output
     printColor = 1;
+
+    debugLevel = 0;
 
     //eps = 2.2204e-16;
     eps = 1.0e-15;
@@ -59,6 +76,9 @@ SQPoptions::SQPoptions()
     hessUpdate = 1;
     fallbackUpdate = 2;
 
+    //
+    convStrategy = 0;
+
     // How many ADDITIONAL (convexified) QPs may be solved per iteration?
     maxConvQP = 1;
 
@@ -76,6 +96,9 @@ SQPoptions::SQPoptions()
 
     // maximum number of second-order correction steps
     maxSOCiter = 3;
+
+    maxItQP = 5000;
+    maxTimeQP = 10000.0;
 
     // Oren-Luenberger scaling parameters
     colEps = 0.1;
@@ -118,14 +141,12 @@ void SQPoptions::optionsConsistency()
     if( !hessLimMem )
         hessMemsize = 1;
 
-#ifndef QPSOLVER_QPOASES_SCHUR
-    if( hessUpdate == 1 )
+    if( sparseQP != 2 && hessUpdate == 1 )
     {
         printf( "SR1 update only works with qpOASES Schur complement version. Using BFGS updates instead.\n" );
         hessUpdate = 2;
         hessScaling = fallbackScaling;
     }
-#endif
 
     // Don't do analytical Hessian for standard OC problems
     //if( vars->objLo < -1.0 )

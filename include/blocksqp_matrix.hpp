@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 /**
  * \file matrix.h
  * \author Stefan Koerkel and JRG ExpDesign

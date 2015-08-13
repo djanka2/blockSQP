@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 #include "blocksqp_general_purpose.hpp"
 
@@ -15,12 +23,16 @@ SQPmethod::SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *st
 
     vars = new SQPiterate( prob, param, 1 );
 
-    #if defined QPSOLVER_QPOASES_DENSE || defined QPSOLVER_QPOASES_SPARSE
-    qp = new qpOASES::SQProblem( prob->nVar, prob->nCon );
-    #elif defined QPSOLVER_QPOASES_SCHUR
-    qp = new qpOASES::SQProblemSchur( prob->nVar, prob->nCon, qpOASES::HST_UNKNOWN, 50 );
-    qp2 = new qpOASES::SQProblemSchur( prob->nVar, prob->nCon, qpOASES::HST_UNKNOWN, 50 );
-    #endif
+    if( param->sparseQP < 2 )
+    {
+        qp = new qpOASES::SQProblem( prob->nVar, prob->nCon );
+        qpSave = new qpOASES::SQProblem( prob->nVar, prob->nCon );
+    }
+    else
+    {
+        qp = new qpOASES::SQProblemSchur( prob->nVar, prob->nCon, qpOASES::HST_UNKNOWN, 50 );
+        qpSave = new qpOASES::SQProblemSchur( prob->nVar, prob->nCon, qpOASES::HST_UNKNOWN, 50 );
+    }
 
     initCalled = false;
 }
@@ -28,33 +40,28 @@ SQPmethod::SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *st
 SQPmethod::~SQPmethod()
 {
     delete qp;
-    delete qp2;
+    delete qpSave;
     delete vars;
 }
 
 
-int SQPmethod::init()
+void SQPmethod::init()
 {
-    int infoConstr = 0;
-    const bool firstCall = 1;
-
-    printf("+-----------------+\n");
-    printf("|Starting blockSQP|\n");
-    printf("+-----------------+\n");
+    // Print header and information about the algorithmic parameters
+    printInfo( param->printLevel );
 
     // Open output files
-    stats->initStats();
+    stats->initStats( param );
     vars->initIterate( param );
 
     // Initialize filter with pair ( maxConstrViolation, objLowerBound )
     initializeFilter();
 
     // Set initial values for all xi and set the Jacobian for linear constraints
-    #ifdef QPSOLVER_SPARSE
-    prob->initialize( vars->xi, vars->lambda, vars->jacNz, vars->jacIndRow, vars->jacIndCol );
-    #else
-    prob->initialize( vars->xi, vars->lambda, vars->constrJac );
-    #endif
+    if( param->sparseQP )
+        prob->initialize( vars->xi, vars->lambda, vars->jacNz, vars->jacIndRow, vars->jacIndCol );
+    else
+        prob->initialize( vars->xi, vars->lambda, vars->constrJac );
 
     initCalled = true;
 }
@@ -62,7 +69,7 @@ int SQPmethod::init()
 
 int SQPmethod::run( int maxIt, int warmStart )
 {
-    int it, infoQP = 0, infoEval = 0, infoHess = 0;
+    int it, infoQP = 0, infoEval = 0;
     bool skipLineSearch = false;
     bool hasConverged = false;
     int whichDerv = param->whichSecondDerv;
@@ -81,11 +88,13 @@ int SQPmethod::run( int maxIt, int warmStart )
         calcInitialHessian();
 
         /// Evaluate all functions and gradients for xi_0
-        #ifdef QPSOLVER_SPARSE
-        prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj, vars->jacNz, vars->jacIndRow, vars->jacIndCol, vars->hess, 1+whichDerv, &infoEval );
-        #else
-        prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj, vars->constrJac, vars->hess, 1+whichDerv, &infoEval );
-        #endif
+        if( param->sparseQP )
+            prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj,
+                            vars->jacNz, vars->jacIndRow, vars->jacIndCol, vars->hess, 1+whichDerv, &infoEval );
+        else
+            prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj,
+                            vars->constrJac, vars->hess, 1+whichDerv, &infoEval );
+        stats->nDerCalls++;
 
         /// Check if converged
         hasConverged = calcOptTol();
@@ -103,11 +112,7 @@ int SQPmethod::run( int maxIt, int warmStart )
     {
         /// Solve QP subproblem with qpOASES or QPOPT
         updateStepBounds( 0 );
-        #ifdef PARALLELQP
-        infoQP = solveQP2( vars->deltaXi, vars->lambdaQP );
-        #else
         infoQP = solveQP( vars->deltaXi, vars->lambdaQP );
-        #endif
 
         if( infoQP == 1 )
         {// 1.) Maximum number of iterations reached
@@ -118,11 +123,7 @@ int SQPmethod::run( int maxIt, int warmStart )
         {// 2.) QP error (e.g., unbounded), solve again with pos.def. diagonal matrix (identity)
             printf("***QP error. Solve again with identity matrix.***\n");
             resetHessian();
-            #ifdef PARALLELQP
-            infoQP = solveQP2( vars->deltaXi, vars->lambdaQP );
-            #else
             infoQP = solveQP( vars->deltaXi, vars->lambdaQP );
-            #endif
             if( infoQP )
             {// If there is still an error, terminate.
                 printf( "***QP error. Stop.***\n" );
@@ -242,11 +243,13 @@ int SQPmethod::run( int maxIt, int warmStart )
         calcLagrangeGradient( vars->gamma, 0 );
 
         /// Evaluate functions and gradients at the new xi
-        #ifdef QPSOLVER_SPARSE
-        prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj, vars->jacNz, vars->jacIndRow, vars->jacIndCol, vars->hess, 1+whichDerv, &infoEval );
-        #else
-        prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj, vars->constrJac, vars->hess, 1+whichDerv, &infoEval );
-        #endif
+        if( param->sparseQP )
+            prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj,
+                            vars->jacNz, vars->jacIndRow, vars->jacIndCol, vars->hess, 1+whichDerv, &infoEval );
+        else
+            prob->evaluate( vars->xi, vars->lambda, &vars->obj, vars->constr, vars->gradObj,
+                            vars->constrJac, vars->hess, 1+whichDerv, &infoEval );
+        stats->nDerCalls++;
 
         /// Check if converged
         hasConverged = calcOptTol();
@@ -256,12 +259,13 @@ int SQPmethod::run( int maxIt, int warmStart )
         if( hasConverged && vars->steptype < 2 )
         {
             stats->itCount++;
-            #if (MYDEBUGLEVEL >= 3)
-            //printf("Computing finite differences Hessian at the solution ... \n");
-            //calcFiniteDiffHessian( );
-            //stats->printHessian( prob->nBlocks, vars->hess );
-            stats->dumpQPCpp( prob, vars, qp );
-            #endif
+            if( param->debugLevel > 2 )
+            {
+                //printf("Computing finite differences Hessian at the solution ... \n");
+                //calcFiniteDiffHessian( );
+                //stats->printHessian( prob->nBlocks, vars->hess );
+                stats->dumpQPCpp( prob, vars, qp, param->sparseQP );
+            }
             return 0; //Convergence achieved!
         }
 
@@ -289,7 +293,7 @@ int SQPmethod::run( int maxIt, int warmStart )
 
 void SQPmethod::finish()
 {
-    stats->finish( prob, vars );
+    stats->finish( param );
     initCalled = false;
 }
 
@@ -365,11 +369,10 @@ void SQPmethod::calcLagrangeGradient( const Matrix &lambda, const Matrix &gradOb
  */
 void SQPmethod::calcLagrangeGradient( Matrix &gradLagrange, int flag )
 {
-    #ifdef QPSOLVER_SPARSE
-    calcLagrangeGradient( vars->lambda, vars->gradObj, vars->jacNz, vars->jacIndRow, vars->jacIndCol, gradLagrange, flag );
-    #else
-    calcLagrangeGradient( vars->lambda, vars->gradObj, vars->constrJac, gradLagrange, flag );
-    #endif
+    if( param->sparseQP )
+        calcLagrangeGradient( vars->lambda, vars->gradObj, vars->jacNz, vars->jacIndRow, vars->jacIndCol, gradLagrange, flag );
+    else
+        calcLagrangeGradient( vars->lambda, vars->gradObj, vars->constrJac, gradLagrange, flag );
 }
 
 
@@ -398,21 +401,24 @@ bool SQPmethod::calcOptTol()
 
 
 /// \todo
-void SQPmethod::printInfo()
+void SQPmethod::printInfo( int printLevel )
 {
-    printf( "Globalization:" );
-    printf( "QP solver: " );
-    printf( "Hessian approximation:" );
-    printf( "Hessian memory:" );
-    printf( "Hessian scaling:" );
+    printf("+-----------------+\n");
+    printf("|Starting blockSQP|\n");
+    printf("+-----------------+\n");
 
-    #ifdef QPSOLVER_QPOASES_SCHUR
-    printf("Using Schur complement version of qpOASES.\n");
-    #elif defined QPSOLVER_QPOASES_DENSE
-    printf("Using standard version of qpOASES.\n");
-    #elif defined QPSOLVER_QPOASES_SPARSE
-    printf("Using standard version of qpOASES with sparse matrices.\n");
-    #endif
+    //printf( "Globalization:" );
+    //printf( "QP solver: " );
+    //printf( "Hessian approximation:" );
+    //printf( "Hessian memory:" );
+    //printf( "Hessian scaling:" );
+
+    if( param->sparseQP == 0 )
+        printf("Using standard version of qpOASES.\n");
+    else if( param->sparseQP == 1 )
+        printf("Using standard version of qpOASES with sparse matrices.\n");
+    else if( param->sparseQP == 2 )
+        printf("Using Schur complement version of qpOASES.\n");
 }
 
 } // namespace blockSQP

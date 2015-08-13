@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 #include "blocksqp_general_purpose.hpp"
 
@@ -80,9 +88,8 @@ void SQPmethod::resetHessian( int iBlock )
  */
 int SQPmethod::calcFiniteDiffHessian()
 {
-    int iVar, jVar, k, iBlock, nBlocks, maxBlock, infoObj, info, offset, idx, idx1, idx2;
+    int iVar, jVar, k, iBlock, maxBlock, info, idx, idx1, idx2;
     double dummy, lowerVio, upperVio;
-    SymMatrix *dummySym;
     Matrix pert;
     SQPiterate varsP = SQPiterate( *vars );
 
@@ -143,13 +150,18 @@ int SQPmethod::calcFiniteDiffHessian()
             vars->xi( k ) += pert( k );
 
         // Compute perturbed Lagrange gradient
-        #ifdef QPSOLVER_SPARSE
-        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP.constr, varsP.gradObj, varsP.jacNz, varsP.jacIndRow, varsP.jacIndCol, vars->hess, 1, &info );
-        calcLagrangeGradient( vars->lambda, varsP.gradObj, varsP.jacNz, varsP.jacIndRow, varsP.jacIndCol, varsP.gradLagrange, 0 );
-        #else
-        prob->evaluate( vars->xi, vars->lambda, &dummy, varsP.constr, varsP.gradObj, varsP.constrJac, vars->hess, 1, &info );
-        calcLagrangeGradient( vars->lambda, varsP.gradObj, varsP.constrJac, varsP.gradLagrange, 0 );
-        #endif
+        if( param->sparseQP )
+        {
+            prob->evaluate( vars->xi, vars->lambda, &dummy, varsP.constr, varsP.gradObj,
+                            varsP.jacNz, varsP.jacIndRow, varsP.jacIndCol, vars->hess, 1, &info );
+            calcLagrangeGradient( vars->lambda, varsP.gradObj, varsP.jacNz, varsP.jacIndRow,
+                                  varsP.jacIndCol, varsP.gradLagrange, 0 );
+        }
+        else
+        {
+            prob->evaluate( vars->xi, vars->lambda, &dummy, varsP.constr, varsP.gradObj, varsP.constrJac, vars->hess, 1, &info );
+            calcLagrangeGradient( vars->lambda, varsP.gradObj, varsP.constrJac, varsP.gradLagrange, 0 );
+        }
 
         // Compute finite difference approximations: one column in every block
         for( iBlock=0; iBlock<vars->nBlocks; iBlock++ )
@@ -177,16 +189,33 @@ int SQPmethod::calcFiniteDiffHessian()
 }
 
 
-void SQPmethod::sizeHessianNocedal( const Matrix &gamma, const Matrix &delta, int iBlock )
+void SQPmethod::sizeInitialHessian( const Matrix &gamma, const Matrix &delta, int iBlock, int option )
 {
     int i, j;
     double scale;
     double myEps = 1.0e2 * param->eps;
 
-    scale = adotb( delta, gamma );
+    if( option == 1 )
+    {// Shanno-Phua
+        scale = adotb( gamma, gamma ) / fmax( adotb( delta, gamma ), myEps );
+    }
+    else if( option == 2 )
+    {// Oren-Luenberger
+        scale = adotb( delta, gamma ) / fmax( adotb( delta, delta ), myEps );
+        scale = fmin( scale, 1.0 );
+    }
+    else if( option == 3 )
+    {// Geometric mean of 1 and 2
+        scale = sqrt( adotb( gamma, gamma ) / fmax( adotb( delta, delta ), myEps ) );
+    }
+    else
+    {// Invalid option, ignore
+        return;
+    }
+
     if( scale > 0.0 )
     {
-        scale = adotb( gamma, gamma ) / fmax( scale, myEps );
+        scale = fmax( scale, myEps );
         for( i=0; i<vars->hess[iBlock].M(); i++ )
             for( j=i; j<vars->hess[iBlock].M(); j++ )
                 vars->hess[iBlock]( i,j ) *= scale;
@@ -198,54 +227,8 @@ void SQPmethod::sizeHessianNocedal( const Matrix &gamma, const Matrix &delta, in
     stats->averageSizingFactor += scale;
 }
 
-void SQPmethod::sizeHessianMean( const Matrix &gamma, const Matrix &delta, int iBlock )
-{
-    int i, j;
-    double scale;
-    double myEps = 1.0e2 * param->eps;
 
-    scale = sqrt( adotb( gamma, gamma ) / fmax( adotb( delta, delta ), myEps ) );
-    for( i=0; i<vars->hess[iBlock].M(); i++ )
-        for( j=i; j<vars->hess[iBlock].M(); j++ )
-            vars->hess[iBlock]( i,j ) *= scale;
-
-    // statistics: average sizing factor
-    stats->averageSizingFactor += scale;
-}
-
-void SQPmethod::sizeHessianOL( const Matrix &gamma, const Matrix &delta, int iBlock )
-{
-    if( gamma.M() == 0 )
-        return;
-    int i, j;
-    double value1, value2, value3;
-    double myEps = 1.0e2 * param->eps;
-
-    value1 = adotb( gamma, delta );
-    value2 = adotb( delta, delta );
-
-    /// \todo still has the form from COL sizing with all the safeguards. Should look like Nocedal
-    /// and Mean after computations are done! (maybe put them into one function)
-    if( value2 > myEps )
-        value3 = value1 / value2;
-    else
-        value3 = 1.0;
-
-    if( value3 > 0.0 && value3 < 1.0 )
-    {
-        value3 = fmax( param->colEps, value3 );
-        for( i=0; i<vars->hess[iBlock].M(); i++ )
-            for( j=i; j<vars->hess[iBlock].M(); j++ )
-                vars->hess[iBlock]( i,j ) *= value3;
-    }
-    else
-        value3 = 1.0;
-
-    // statistics: average sizing factor
-    stats->averageSizingFactor += value3;
-}
-
-void SQPmethod::sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int iBlock )
+void SQPmethod::sizeHessianCOL( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j;
     double theta, scale, myEps = 1.0e2 * param->eps;
@@ -279,7 +262,7 @@ void SQPmethod::sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int 
     if( scale < 1.0 && scale > 0.0 )
     {
         scale = fmax( param->colEps, scale );
-        //printf("Sizing value (Tapia) block %i = %g\n", iBlock, scale );
+        //printf("Sizing value (COL) block %i = %g\n", iBlock, scale );
         for( i=0; i<vars->hess[iBlock].M(); i++ )
             for( j=i; j<vars->hess[iBlock].M(); j++ )
                 vars->hess[iBlock]( i,j ) *= scale;
@@ -329,14 +312,10 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
         vars->deltaGamma(iBlock) = adotb( smallDelta, smallGamma );
 
         // Sizing before the update
-        if( hessScaling == 1 && firstIter )
-            sizeHessianNocedal( smallGamma, smallDelta, iBlock );
-        else if( hessScaling == 2 && firstIter )
-            sizeHessianOL( smallGamma, smallDelta, iBlock );
-        else if( hessScaling == 3 && firstIter )
-            sizeHessianMean( smallGamma, smallDelta, iBlock );
+        if( hessScaling < 4 && firstIter )
+            sizeInitialHessian( smallGamma, smallDelta, iBlock, hessScaling );
         else if( hessScaling == 4 )
-            sizeHessianTapia( smallGamma, smallDelta, iBlock );
+            sizeHessianCOL( smallGamma, smallDelta, iBlock );
 
         // Compute the new update
         if( updateType == 1 )
@@ -347,14 +326,10 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
             vars->hess = vars->hess2;
 
             // Sizing the fallback update
-            if( param->fallbackScaling == 1 && firstIter )
-                sizeHessianNocedal( smallGamma, smallDelta, iBlock );
-            else if( param->fallbackScaling == 2 && firstIter )
-                sizeHessianOL( smallGamma, smallDelta, iBlock );
-            else if( param->fallbackScaling == 3 && firstIter )
-                sizeHessianMean( smallGamma, smallDelta, iBlock );
+            if( param->fallbackScaling < 4 && firstIter )
+                sizeInitialHessian( smallGamma, smallDelta, iBlock, param->fallbackScaling );
             else if( param->fallbackScaling == 4 )
-                sizeHessianTapia( smallGamma, smallDelta, iBlock );
+                sizeHessianCOL( smallGamma, smallDelta, iBlock );
 
             // Compute fallback update
             if( param->fallbackUpdate == 2 )
@@ -376,12 +351,12 @@ void SQPmethod::calcHessianUpdate( int updateType, int hessScaling )
 }
 
 
-void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling, double mu )
+void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling )
 {
     int iBlock, nBlocks, nVarLocal;
     Matrix smallGamma, smallDelta;
     Matrix gammai, deltai;
-    int i, j, m, pos, posOldest, posNewest;
+    int i, m, pos, posOldest, posNewest;
     int hessDamped, hessSkipped;
     double averageSizingFactor;
 
@@ -430,12 +405,7 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
         // Size the initial update, but with the most recent delta/gamma-pair
         gammai.Submatrix( smallGamma, nVarLocal, 1, 0, posNewest );
         deltai.Submatrix( smallDelta, nVarLocal, 1, 0, posNewest );
-        if( hessScaling == 1 )
-            sizeHessianNocedal( gammai, deltai, iBlock );
-        else if( hessScaling == 2 )
-            sizeHessianOL( gammai, deltai, iBlock );
-        else if( hessScaling == 3 )
-            sizeHessianMean( gammai, deltai, iBlock );
+        sizeInitialHessian( gammai, deltai, iBlock, hessScaling );
 
         for( i=0; i<m; i++ )
         {
@@ -458,7 +428,7 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
 
             // Selective sizing before the update
             if( hessScaling == 4 )
-                sizeHessianTapia( gammai, deltai, iBlock );
+                sizeHessianCOL( gammai, deltai, iBlock );
 
             // Compute the new update
             if( updateType == 1 && vars->updateSequence[pos] == 1 )
@@ -476,41 +446,6 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling,
                 if( hessScaling == 4 )
                     stats->averageSizingFactor = averageSizingFactor;
             }
-        }
-
-        // Convex combination between SR1 and scaled identity
-        if( updateType == 1 && mu > 0.0 )
-        {
-            const double myEps = 1.0e2 * param->eps;
-            const double fac1 = 1.0 - mu;
-            double fac2;
-
-            // H = (1-mu)*H_SR1 + mu*(scal*I)
-            for( i=0; i<vars->hess[iBlock].M(); i++ )
-                for( j=i; j<vars->hess[iBlock].M(); j++ )
-                    vars->hess[iBlock]( i,j ) *= fac1;
-
-            if( param->fallbackScaling == 1 )
-            {
-                fac2 = adotb( deltai, gammai );
-                if( fac2 > 0.0 )
-                    fac2 = adotb( gammai, gammai ) / fmax( fac2, myEps );
-                else
-                    fac2 = 1.0;
-            }
-            else if( param->fallbackScaling == 2 )
-            {
-                fac2 = adotb( deltai, deltai );
-                if( fac2 > 0.0 )
-                    fac2 = adotb( gammai, deltai ) / fmax( fac2, myEps );
-                else
-                    fac2 = 1.0;
-            }
-            else if( param->fallbackScaling > 2 )
-                printf( "fallbackScaling = %i not supported!\n", param->fallbackScaling );
-
-            for( i=0; i<vars->hess[iBlock].M(); i++ )
-                vars->hess[iBlock]( i,i ) += fac2;
         }
 
         // If an update is skipped to often, reset Hessian block
@@ -531,9 +466,11 @@ void SQPmethod::calcBFGS( const Matrix &gamma, const Matrix &delta, int iBlock )
     double thetaPowell = 0.0;
     int damped;
 
-    // Work with a local copy of gamma because damping may need to change gamma.
-    // Note that vars->gamma needs to remain unchanged! This may be important in a limited memory context:
-    // When information is "forgotten", B_i-1 is different and the original gamma might lead to an undamped update with the new B_i-1!
+    /* Work with a local copy of gamma because damping may need to change gamma.
+     * Note that vars->gamma needs to remain unchanged!
+     * This may be important in a limited memory context:
+     * When information is "forgotten", B_i-1 is different and the
+     *  original gamma might lead to an undamped update with the new B_i-1! */
     Matrix gamma2 = gamma;
 
     B = &vars->hess[iBlock];
@@ -552,12 +489,12 @@ void SQPmethod::calcBFGS( const Matrix &gamma, const Matrix &delta, int iBlock )
     }
     h2 = vars->deltaGamma( iBlock );
 
-    // Damping strategy to maintain pos. def. (Nocedal/Wright p.537; SNOPT paper)
-    // Interpolates between current approximation and unmodified BFGS
+    /* Powell's damping strategy to maintain pos. def. (Nocedal/Wright p.537; SNOPT paper)
+     * Interpolates between current approximation and unmodified BFGS */
     damped = 0;
     if( param->hessDamp )
         if( h2 < param->hessDampFac * h1 / vars->alpha && fabs( h1 - h2 ) > 1.0e-12 )
-        {// At the first iteration h1 and h2 are equal due to Tapia scaling
+        {// At the first iteration h1 and h2 are equal due to COL scaling
 
             thetaPowell = (1.0 - param->hessDampFac)*h1 / ( h1 - h2 );
 

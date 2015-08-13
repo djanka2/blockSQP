@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 
 namespace blockSQP
@@ -43,27 +51,26 @@ SQPiterate::SQPiterate( Problemspec* prob, SQPoptions* param, bool full )
 
     allocMin( prob );
 
-    #ifdef QPSOLVER_DENSE
-    constrJac.Dimension( prob->nCon, prob->nVar ).Initialize( 0.0 );
-    hessNz = new double[prob->nVar*prob->nVar];
-    #else
-    hessNz = NULL;
-    hessNz2 = NULL;
-    #endif
+    if( !param->sparseQP )
+    {
+        constrJac.Dimension( prob->nCon, prob->nVar ).Initialize( 0.0 );
+        hessNz = new double[prob->nVar*prob->nVar];
+    }
+    else
+        hessNz = NULL;
 
-    noUpdateCounter = NULL;
     jacNz = NULL;
     jacIndCol = NULL;
     jacIndRow = NULL;
+
     hessIndCol = NULL;
     hessIndRow = NULL;
     hessIndLo = NULL;
-    hessIndCol2 = NULL;
-    hessIndRow2 = NULL;
-    hessIndLo2 = NULL;
     hess = NULL;
     hess1 = NULL;
     hess2 = NULL;
+
+    noUpdateCounter = NULL;
 
     if( full )
     {
@@ -88,24 +95,27 @@ SQPiterate::SQPiterate( const SQPiterate &iter )
     gradObj = iter.gradObj;
     gradLagrange = iter.gradLagrange;
 
-    #ifdef QPSOLVER_DENSE
     constrJac = iter.constrJac;
-    jacNz = NULL;
-    jacIndRow = NULL;
-    jacIndCol = NULL;
-    #else
-    int nVar = xi.M();
-    int nnz = iter.jacIndCol[nVar];
+    if( iter.jacNz != NULL )
+    {
+        int nVar = xi.M();
+        int nnz = iter.jacIndCol[nVar];
 
-    jacNz = new double[nnz];
-    for( i=0; i<nnz; i++ )
-        jacNz[i] = iter.jacNz[i];
+        jacNz = new double[nnz];
+        for( i=0; i<nnz; i++ )
+            jacNz[i] = iter.jacNz[i];
 
-    jacIndRow = new int[nnz + (nVar+1) + nVar];
-    for( i=0; i<nnz + (nVar+1) + nVar; i++ )
-        jacIndRow[i] = iter.jacIndRow[i];
-    jacIndCol = jacIndRow + nnz;
-    #endif
+        jacIndRow = new int[nnz + (nVar+1) + nVar];
+        for( i=0; i<nnz + (nVar+1) + nVar; i++ )
+            jacIndRow[i] = iter.jacIndRow[i];
+        jacIndCol = jacIndRow + nnz;
+    }
+    else
+    {
+        jacNz = NULL;
+        jacIndRow = NULL;
+        jacIndCol = NULL;
+    }
 
     noUpdateCounter = NULL;
     hessNz = NULL;
@@ -170,6 +180,27 @@ void SQPiterate::allocHess( SQPoptions *param )
     hess = hess1;
 }
 
+/**
+ * Convert diagonal block Hessian to double array.
+ * Assumes that hessNz is already allocated.
+ */
+void SQPiterate::convertHessian( Problemspec *prob, double eps, SymMatrix *&hess_ )
+{
+    if( hessNz == NULL )
+        return;
+    int count = 0;
+    int blockCnt = 0;
+    for( int i=0; i<prob->nVar; i++ )
+        for( int j=0; j<prob->nVar; j++ )
+        {
+            if( i == blockIdx[blockCnt+1] )
+                blockCnt++;
+            if( j >= blockIdx[blockCnt] && j < blockIdx[blockCnt+1] )
+                hessNz[count++] = hess[blockCnt]( i - blockIdx[blockCnt], j - blockIdx[blockCnt] );
+            else
+                hessNz[count++] = 0.0;
+        }
+}
 
 /**
  * Convert array *hess to a single symmetric sparse matrix in
@@ -247,8 +278,7 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps, SymMatrix *&hess
  */
 void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
 {
-    int iBlock, varDim, i;
-    int hessCount;
+    int iBlock, i;
     int nVar = prob->nVar;
     int nCon = prob->nCon;
 

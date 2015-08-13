@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp_general_purpose.hpp"
 
 namespace blockSQP
@@ -41,9 +49,9 @@ int inverse( const Matrix &A, Matrix &Ainv )
  */
 int calcEigenvalues( const SymMatrix &B, Matrix &ev )
 {
-    int i, j, n;
+    int n;
     SymMatrix temp;
-    double *work, *dummy;
+    double *work, *dummy = 0;
     int info, iDummy = 1;
 
     n = B.M();
@@ -115,36 +123,35 @@ double adotb( const Matrix &a, const Matrix &b )
 }
 
 /**
- * Compute the matrix vector product for a column-compressed sparse matrix A with a vector b and store it in Atimesb
+ * Compute the matrix vector product for a column-compressed sparse matrix A with a vector b and store it in result
  */
-void sparseAtimesb( double *Anz, int *AIndRow, int *AIndCol, const Matrix &b, Matrix &Atimesb )
+void Atimesb( double *Anz, int *AIndRow, int *AIndCol, const Matrix &b, Matrix &result )
 {
     int nCol = b.M();
-    int nRow = Atimesb.M();
+    int nRow = result.M();
     int i, k;
-    int nnz = AIndCol[nCol];
 
     for( i=0; i<nRow; i++ )
-        Atimesb( i ) = 0.0;
+        result( i ) = 0.0;
 
     for( i=0; i<nCol; i++ )
     {
         // k runs over all elements in one column
         for( k=AIndCol[i]; k<AIndCol[i+1]; k++ )
-            Atimesb( AIndRow[k] ) += Anz[k] * b( i );
+            result( AIndRow[k] ) += Anz[k] * b( i );
     }
 
 }
 
 /**
- * Compute the matrix vector product A*b and store it in Atimesb
+ * Compute the matrix vector product A*b and store it in result
  */
-void Atimesb( const Matrix &A, const Matrix &b, Matrix &Atimesb )
+void Atimesb( const Matrix &A, const Matrix &b, Matrix &result )
 {
-    Atimesb.Initialize( 0.0 );
+    result.Initialize( 0.0 );
     for( int i=0; i<A.M(); i++ )
         for( int k=0; k<A.N(); k++ )
-            Atimesb( i ) += A( i, k ) * b( k );
+            result( i ) += A( i, k ) * b( k );
 }
 
 double l1VectorNorm( const Matrix &v )
@@ -306,7 +313,7 @@ double lInfConstraintNorm( const Matrix &xi, const Matrix &constr, const Matrix 
     int nCon = constr.M();
 
     // Violation of simple bounds
-    for( i=0; i<xi.M(); i++ )
+    for( i=0; i<nVar; i++ )
     {
         if( xi( i ) - bu( i ) > norm )
             norm = xi( i ) - bu( i );
@@ -315,7 +322,7 @@ double lInfConstraintNorm( const Matrix &xi, const Matrix &constr, const Matrix 
     }
 
     // Find out the largest constraint violation
-    for( i=0; i<constr.M(); i++ )
+    for( i=0; i<nCon; i++ )
     {
         if( constr( i ) - bu( nVar+i ) > norm )
             norm = constr( i ) - bu( nVar+i );

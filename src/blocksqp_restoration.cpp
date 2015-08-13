@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 #include "blocksqp_problemspec.hpp"
 
@@ -6,10 +14,9 @@ namespace blockSQP
 
 RestorationProblem::RestorationProblem( Problemspec *parentProblem, const Matrix &xiReference )
 {
-    int i, iVar, iCon, ieqCnt;
+    int i, iVar, iCon;
 
     parent = parentProblem;
-    //xiRef = Matrix( xiReference );
     xiRef.Dimension( parent->nVar );
     for( i=0; i<parent->nVar; i++)
         xiRef( i ) = xiReference( i );
@@ -51,7 +58,7 @@ void RestorationProblem::evaluate( const Matrix &xi, const Matrix &lambda,
                                    Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
                                    SymMatrix *&hess, int dmode, int *info )
 {
-    int ieqCnt, iCon, i;
+    int iCon, i;
     double diff, regTerm;
     Matrix xiOrig, slack;
 
@@ -109,7 +116,7 @@ void RestorationProblem::evaluate( const Matrix &xi, const Matrix &lambda,
                                    Matrix &gradObj, Matrix &constrJac,
                                    SymMatrix *&hess, int dmode, int *info )
 {
-    int ieqCnt, iCon, i;
+    int iCon, i;
     double diff, regTerm;
     Matrix xiOrig, constrJacOrig;
     Matrix slack;
@@ -168,7 +175,7 @@ void RestorationProblem::evaluate( const Matrix &xi, const Matrix &lambda,
 
 void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol )
 {
-    int i, iCon, iVar, info;
+    int i, info;
     double objval;
     Matrix xiOrig, slack, constrRef;
 
@@ -235,7 +242,7 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, double *&jacNz,
 
 void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac )
 {
-    int i, iCon, iVar, info;
+    int i, info;
     double objval;
     Matrix xiOrig, slack, constrJacOrig, constrRef;
 
@@ -330,7 +337,8 @@ void RestorationProblem::printVariables( const Matrix &xi, const Matrix &lambda,
 
     printf("\n<|----- Original Variables -----|>\n");
     for( k=0; k<parent->nVar; k++ )
-        printf("%7i: %-30s   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, parent->varNames[k], bl(k), xi(k), bu(k), lambda(k));
+        //printf("%7i: %-30s   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, parent->varNames[k], bl(k), xi(k), bu(k), lambda(k));
+        printf("%7i: x%-5i   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, k, bl(k), xi(k), bu(k), lambda(k));
     printf("\n<|----- Slack Variables -----|>\n");
     for( k=parent->nVar; k<nVar; k++ )
         printf("%7i: slack   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, bl(k), xi(k), bu(k), lambda(k));
@@ -340,7 +348,8 @@ void RestorationProblem::printConstraints( const Matrix &constr, const Matrix &l
 {
     printf("\n<|----- Constraints -----|>\n");
     for( int k=0; k<nCon; k++ )
-        printf("%5i: %-30s   %7g <= %10.4g <= %7g   |   mul=%10.3g\n", k+1, parent->conNames[parent->nVar+k], bl(nVar+k), constr(k), bu(nVar+k), lambda(nVar+k));
+        //printf("%5i: %-30s   %7g <= %10.4g <= %7g   |   mul=%10.3g\n", k+1, parent->conNames[parent->nVar+k], bl(nVar+k), constr(k), bu(nVar+k), lambda(nVar+k));
+        printf("%5i: c%-5i   %7g <= %10.4g <= %7g   |   mul=%10.3g\n", k+1, k, bl(nVar+k), constr(k), bu(nVar+k), lambda(nVar+k));
 }
 
 void RestorationProblem::printInfo()

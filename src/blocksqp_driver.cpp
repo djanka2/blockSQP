@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 
 namespace blockSQP
@@ -16,7 +24,6 @@ class MyProblem : public Problemspec
         virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall = 0 );
         virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac );
         virtual void initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol );
-        virtual void printInfo();
 
         virtual void evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
                                Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
@@ -24,26 +31,6 @@ class MyProblem : public Problemspec
         virtual void evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
                                Matrix &gradObj, Matrix &constrJac, SymMatrix *&hess, int dmode, int *info );
 };
-
-void MyProblem::printInfo()
-{
-    printf( "blockSQP standalone version using\n" );
-#ifdef QPSOLVER_QPOPT
-    printf( "QPOPT.\n" );
-#endif
-#ifdef QPSOLVER_QPOASES_DENSE
-    printf( "QPOASES (DENSE).\n" );
-#endif
-#ifdef QPSOLVER_QPOASES_SPARSE
-    printf( "QPOASES (w SPARSE matrices).\n" );
-#endif
-#ifdef QPSOLVER_QPOASES_SCHUR
-    printf( "QPOASES (SCHUR COMPLEMENT).\n" );
-#endif
-
-    printf( "\nnVar = %i\n", nVar );
-    printf( "nCon = %i\n\n", nCon );
-}
 
 /**
  * Constraint evaluation methods still operate on dense Jacobian, this is a generic method to convert it
@@ -294,9 +281,9 @@ int main( int argc, const char* argv[] )
     opts->nlinfeastol = 1.0e-10;
 
     // 0: no globalization, 1: filter line search
-    opts->globalization = 0;
+    opts->globalization = 1;
     // 0: (scaled) identity, 1: SR1, 2: BFGS
-    opts->hessUpdate = 2;
+    opts->hessUpdate = 1;
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: scale initial Hessian with geometric mean of 1 and 2
     // 4: scale Hessian in every step with centered Oren-Luenberger sizing according to Tapia paper
@@ -308,8 +295,9 @@ int main( int argc, const char* argv[] )
     // If too many updates are skipped, reset Hessian
     opts->maxConsecSkippedUpdates = 200;
     // 0: full space Hessian approximation (ignore block structure), 1: blockwise updates
-    opts->blockHess = 0;
+    opts->blockHess = 1;
     opts->whichSecondDerv = 0;
+    opts->sparseQP = 0;
 
 
     /*-------------------------------------------------*/
@@ -319,8 +307,8 @@ int main( int argc, const char* argv[] )
     stats = new SQPstats( outpath );
     meth = new SQPmethod( prob, opts, stats );
 
-    ret = meth->init();
-    ret = meth->run( 30 );
+    meth->init();
+    ret = meth->run( 5 );
     meth->finish();
     if( ret == 1 )
         printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");

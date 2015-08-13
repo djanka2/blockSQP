@@ -1,3 +1,12 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
+
 /* Matrix-Datentyp */
 /* von Stefan Koerkel 1993-98 */
 
@@ -172,6 +181,7 @@ Matrix &Matrix::operator=( const Matrix &A )
     Ecount++;
 
     if ( this != &A )
+    {
         if ( !tflag )
         {
             free();
@@ -195,6 +205,7 @@ Matrix &Matrix::operator=( const Matrix &A )
                 for ( j = 0; j < n ; j++ )
                     (*this)(i,j) = A(i,j);
         }
+    }
 
     return *this;
 }
@@ -322,7 +333,7 @@ Matrix &Matrix::Arraymatrix( int M, int N, double *ARRAY, int LDIM )
 
 
 const Matrix &Matrix::Print( FILE *f, int DIGITS, int flag ) const
-{    int i, j, l;
+{    int i, j;
      double x;
 
      // Flag == 1: Matlab output

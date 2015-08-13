@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 #include "blocksqp_general_purpose.hpp"
 
@@ -17,17 +25,15 @@ SQPstats::SQPstats( PATHSTR myOutpath )
     hessSkipped = 0;
     hessDamped = 0;
     averageSizingFactor = 0.0;
+    nFunCalls = 0;
+    nDerCalls = 0;
+    nRestHeurCalls = 0;
+    nRestPhaseCalls = 0;
 }
 
-/**
- * One line of output. If termination criterion was met in the current
- * iteration, return 1, otherwise 0.
- */
+
 void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *param, bool hasConverged )
 {
-    int i;
-    Matrix dummyWeights( 0, 0, 0 );
-
     /*
      * vars->steptype:
      *-1: full step was accepted because it reduces the KKT error although line search failed
@@ -73,11 +79,12 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
             printf("\n");
         }
 
-#if (MYDEBUGLEVEL >= 1)
-        // Print everything in a CSV file as well
-        fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
-                 vars->obj, vars->cNormS, vars->tol, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0 );
-#endif
+        if( param->debugLevel > 0 )
+        {
+            // Print everything in a CSV file as well
+            fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %23.16e, %i, %23.16e\n",
+                    vars->obj, vars->cNormS, vars->tol, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0 );
+        }
     }
     else
     {
@@ -136,20 +143,22 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
             }
             printf("\n");
         }
-#if (MYDEBUGLEVEL >= 1)
-        // Print everything in a CSV file as well
-        fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %i, %23.16e, %i, %23.16e\n",
-                 vars->obj, vars->cNormS, vars->tol, vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
-                 vars->lambdaStepNorm, vars->alpha, vars->nSOCS, hessSkipped, hessDamped, averageSizingFactor,
-                 qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
 
-        // Print update sequence
-        fprintf( updateFile, "%i\t", qpResolve );
-#endif
+        if( param->debugLevel > 0 )
+        {
+            // Print everything in a CSV file as well
+            fprintf( progressFile, "%23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %23.16e, %i, %i, %i, %23.16e, %i, %23.16e\n",
+                     vars->obj, vars->cNormS, vars->tol, vars->gradNorm, lInfVectorNorm( vars->deltaXi ),
+                     vars->lambdaStepNorm, vars->alpha, vars->nSOCS, hessSkipped, hessDamped, averageSizingFactor,
+                     qpResolve, l1VectorNorm( vars->deltaH )/vars->nBlocks );
+
+            // Print update sequence
+            fprintf( updateFile, "%i\t", qpResolve );
+        }
     }
 
     // Print Debug information
-    printDebug( prob, vars );
+    printDebug( vars, param );
 
     // Do not accidentally print hessSkipped in the next iteration
     hessSkipped = 0;
@@ -164,45 +173,49 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
     qpResolve = 0;
 
     if( param->printLevel > 0 )
+    {
         if( hasConverged && vars->steptype < 2 )
+        {
             if( param->printColor )
                 printf("\033[1;32m***CONVERGENCE ACHIEVED!***\n\033[0m");
             else
                 printf("***CONVERGENCE ACHIEVED!***\n");
+        }
+    }
 }
 
 
-void SQPstats::initStats()
+void SQPstats::initStats( SQPoptions *param )
 {
     PATHSTR filename;
 
     // Open files
 
-#if (MYDEBUGLEVEL >= 1)
-    // SQP progress
-    strcpy( filename, outpath );
-    strcat( filename, "sqpits.csv" );
-    progressFile = fopen( filename, "w");
+    if( param->debugLevel > 0 )
+    {
+        // SQP progress
+        strcpy( filename, outpath );
+        strcat( filename, "sqpits.csv" );
+        progressFile = fopen( filename, "w");
 
-    // Update sequence
-    strcpy( filename, outpath );
-    strcat( filename, "updatesequence.txt" );
-    updateFile = fopen( filename, "w" );
-#endif
+        // Update sequence
+        strcpy( filename, outpath );
+        strcat( filename, "updatesequence.txt" );
+        updateFile = fopen( filename, "w" );
+    }
 
-#if (MYDEBUGLEVEL >= 2)
-    // Primal variables
-    strcpy( filename, outpath );
-    strcat( filename, "pv.csv" );
-    primalVarsFile = fopen( filename, "w");
-    //fprintf( primalVarsFile, "xi=[ " );
+    if( param->debugLevel > 1 )
+    {
+        // Primal variables
+        strcpy( filename, outpath );
+        strcat( filename, "pv.csv" );
+        primalVarsFile = fopen( filename, "w");
 
-    // Dual variables
-    strcpy( filename, outpath );
-    strcat( filename, "dv.csv" );
-    dualVarsFile = fopen( filename, "w");
-    //fprintf( dualVarsFile, "lambda=[ " );
-#endif
+        // Dual variables
+        strcpy( filename, outpath );
+        strcat( filename, "dv.csv" );
+        dualVarsFile = fopen( filename, "w");
+    }
 
     itCount = 0;
     qpItTotal = 0;
@@ -213,9 +226,6 @@ void SQPstats::initStats()
 }
 
 
-/**
- * Print primal variables to a MATLAB file
- */
 void SQPstats::printPrimalVars( const Matrix &xi )
 {
     for( int i=0; i<xi.M()-1; i++ )
@@ -224,9 +234,6 @@ void SQPstats::printPrimalVars( const Matrix &xi )
 }
 
 
-/**
- * Print primal variables to a MATLAB file
- */
 void SQPstats::printDualVars( const Matrix &lambda )
 {
     for( int i=0; i<lambda.M()-1; i++ )
@@ -235,9 +242,6 @@ void SQPstats::printDualVars( const Matrix &lambda )
 }
 
 
-/**
- * Print dense Hessian in a MATLAB file
- */
 void SQPstats::printHessian( int nBlocks, SymMatrix *&hess )
 {
     PATHSTR filename;
@@ -271,9 +275,6 @@ void SQPstats::printHessian( int nBlocks, SymMatrix *&hess )
 }
 
 
-/**
- * Print sparse Hessian (in a MATLAB readable format)
- */
 void SQPstats::printHessian( int nVar, double *hesNz, int *hesIndRow, int *hesIndCol )
 {
     PATHSTR filename;
@@ -289,9 +290,6 @@ void SQPstats::printHessian( int nVar, double *hesNz, int *hesIndRow, int *hesIn
 }
 
 
-/**
- * Print dense Jacobian in a MATLAB file
- */
 void SQPstats::printJacobian( const Matrix &constrJac )
 {
     PATHSTR filename;
@@ -308,9 +306,6 @@ void SQPstats::printJacobian( const Matrix &constrJac )
 }
 
 
-/**
- * Print sparse Jacobian (in a MATLAB readable format)
- */
 void SQPstats::printJacobian( int nCon, int nVar, double *jacNz, int *jacIndRow, int *jacIndCol )
 {
     PATHSTR filename;
@@ -326,9 +321,6 @@ void SQPstats::printJacobian( int nCon, int nVar, double *jacNz, int *jacIndRow,
 }
 
 
-/**
- * Print a sparse Matrix in (column compressed) to a MATLAB readable file
- */
 void SQPstats::printSparseMatlab( FILE *file, int nRow, int nCol, double *nz, int *indRow, int *indCol )
 {
     int i, j, count;
@@ -345,34 +337,31 @@ void SQPstats::printSparseMatlab( FILE *file, int nRow, int nCol, double *nz, in
 }
 
 
-void SQPstats::printDebug( Problemspec *prob, SQPiterate *vars )
+void SQPstats::printDebug( SQPiterate *vars, SQPoptions *param )
 {
-#if (MYDEBUGLEVEL >= 2)
-    printPrimalVars( vars->xi );
-    printDualVars( vars->lambda );
-#endif
+    if( param->debugLevel > 1 )
+    {
+        printPrimalVars( vars->xi );
+        printDualVars( vars->lambda );
+    }
 }
 
 
-/**
- * Call before leaving run() routine
- */
-void SQPstats::finish( Problemspec *prob, SQPiterate *vars )
+void SQPstats::finish( SQPoptions *param )
 {
-#if (MYDEBUGLEVEL >= 1)
-    fprintf( progressFile, "\n" );
-    fclose( progressFile );
-    fprintf( updateFile, "\n" );
-    fclose( updateFile );
-#endif
+    if( param->debugLevel > 0 )
+    {
+        fprintf( progressFile, "\n" );
+        fclose( progressFile );
+        fprintf( updateFile, "\n" );
+        fclose( updateFile );
+    }
 
-#if (MYDEBUGLEVEL >= 2)
-    //printDebug( prob, vars );
-    //fprintf( primalVarsFile, "];\n" );
-    fclose( primalVarsFile );
-    //fprintf( dualVarsFile, "];\n" );
-    fclose( dualVarsFile );
-#endif
+    if( param->debugLevel > 1 )
+    {
+        fclose( primalVarsFile );
+        fclose( dualVarsFile );
+    }
 }
 
 
@@ -416,7 +405,7 @@ void SQPstats::printVectorCpp( FILE *outfile, int *vec, int len, char* varname )
 }
 
 
-void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProblem *qp )
+void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProblem *qp, int sparseQP )
 {
     int i, j;
     PATHSTR filename;
@@ -432,23 +421,24 @@ void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProble
     fclose( outfile );
 
     // Print Hessian
-#ifdef QPSOLVER_SPARSE
-    strcpy( filename, outpath );
-    strcat( filename, "qpoases_H_sparse.dat" );
-    outfile = fopen( filename, "w" );
-    for( i=0; i<prob->nVar+1; i++ )
-        fprintf( outfile, "%i ", vars->hessIndCol[i] );
-    fprintf( outfile, "\n" );
+    if( sparseQP )
+    {
+        strcpy( filename, outpath );
+        strcat( filename, "qpoases_H_sparse.dat" );
+        outfile = fopen( filename, "w" );
+        for( i=0; i<prob->nVar+1; i++ )
+            fprintf( outfile, "%i ", vars->hessIndCol[i] );
+        fprintf( outfile, "\n" );
 
-    for( i=0; i<vars->hessIndCol[prob->nVar]; i++ )
-        fprintf( outfile, "%i ", vars->hessIndRow[i] );
-    fprintf( outfile, "\n" );
+        for( i=0; i<vars->hessIndCol[prob->nVar]; i++ )
+            fprintf( outfile, "%i ", vars->hessIndRow[i] );
+        fprintf( outfile, "\n" );
 
-    for( i=0; i<vars->hessIndCol[prob->nVar]; i++ )
-        fprintf( outfile, "%23.16e ", vars->hessNz[i] );
-    fprintf( outfile, "\n" );
-    fclose( outfile );
-#endif
+        for( i=0; i<vars->hessIndCol[prob->nVar]; i++ )
+            fprintf( outfile, "%23.16e ", vars->hessNz[i] );
+        fprintf( outfile, "\n" );
+        fclose( outfile );
+    }
     strcpy( filename, outpath );
     strcat( filename, "qpoases_H.dat" );
     outfile = fopen( filename, "w" );
@@ -481,51 +471,54 @@ void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProble
     strcpy( filename, outpath );
     strcat( filename, "qpoases_A.dat" );
     outfile = fopen( filename, "w" );
-#ifdef QPSOLVER_SPARSE
-    // Also print dense Jacobian
-    Matrix constrJacTemp;
-    constrJacTemp.Dimension( prob->nCon, prob->nVar ).Initialize( 0.0 );
-    for( i=0; i<prob->nVar; i++ )
-        for( j=vars->jacIndCol[i]; j<vars->jacIndCol[i+1]; j++ )
-            constrJacTemp( vars->jacIndRow[j], i ) = vars->jacNz[j];
-    for( i=0; i<m; i++ )
+    if( sparseQP )
     {
-        for( j=0; j<n; j++ )
-            fprintf( outfile, "%23.16e ", constrJacTemp( i, j ) );
-        fprintf( outfile, "\n" );
+        // Also print dense Jacobian
+        Matrix constrJacTemp;
+        constrJacTemp.Dimension( prob->nCon, prob->nVar ).Initialize( 0.0 );
+        for( i=0; i<prob->nVar; i++ )
+            for( j=vars->jacIndCol[i]; j<vars->jacIndCol[i+1]; j++ )
+                constrJacTemp( vars->jacIndRow[j], i ) = vars->jacNz[j];
+        for( i=0; i<m; i++ )
+        {
+            for( j=0; j<n; j++ )
+                fprintf( outfile, "%23.16e ", constrJacTemp( i, j ) );
+            fprintf( outfile, "\n" );
+        }
+        fclose( outfile );
     }
-    fclose( outfile );
-#else
-
-    for( i=0; i<m; i++ )
+    else
     {
-        for( j=0; j<n; j++ )
-            if( vars->constrJac( i, j ) < myInf )
-                fprintf( outfile, "%23.16e ", vars->constrJac( i, j ) );
-            else
-                fprintf( outfile, "%23.16e ", 0.0 );
-        fprintf( outfile, "\n" );
+        for( i=0; i<m; i++ )
+        {
+            for( j=0; j<n; j++ )
+                if( vars->constrJac( i, j ) < myInf )
+                    fprintf( outfile, "%23.16e ", vars->constrJac( i, j ) );
+                else
+                    fprintf( outfile, "%23.16e ", 0.0 );
+            fprintf( outfile, "\n" );
+        }
+        fclose( outfile );
     }
-    fclose( outfile );
-#endif
 
-#ifdef QPSOLVER_SPARSE
-    strcpy( filename, outpath );
-    strcat( filename, "qpoases_A_sparse.dat" );
-    outfile = fopen( filename, "w" );
-    for( i=0; i<prob->nVar+1; i++ )
-        fprintf( outfile, "%i ", vars->jacIndCol[i] );
-    fprintf( outfile, "\n" );
+    if( sparseQP )
+    {
+        strcpy( filename, outpath );
+        strcat( filename, "qpoases_A_sparse.dat" );
+        outfile = fopen( filename, "w" );
+        for( i=0; i<prob->nVar+1; i++ )
+            fprintf( outfile, "%i ", vars->jacIndCol[i] );
+        fprintf( outfile, "\n" );
 
-    for( i=0; i<vars->jacIndCol[prob->nVar]; i++ )
-        fprintf( outfile, "%i ", vars->jacIndRow[i] );
-    fprintf( outfile, "\n" );
+        for( i=0; i<vars->jacIndCol[prob->nVar]; i++ )
+            fprintf( outfile, "%i ", vars->jacIndRow[i] );
+        fprintf( outfile, "\n" );
 
-    for( i=0; i<vars->jacIndCol[prob->nVar]; i++ )
-        fprintf( outfile, "%23.16e ", vars->jacNz[i] );
-    fprintf( outfile, "\n" );
-    fclose( outfile );
-#endif
+        for( i=0; i<vars->jacIndCol[prob->nVar]; i++ )
+            fprintf( outfile, "%23.16e ", vars->jacNz[i] );
+        fprintf( outfile, "\n" );
+        fclose( outfile );
+    }
 
     // Print variable lower bounds
     strcpy( filename, outpath );
@@ -582,7 +575,7 @@ void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProble
 }
 
 
-void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars )
+void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars, int sparseQP )
 {
     Matrix temp;
     PATHSTR filename;
@@ -621,10 +614,11 @@ void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars )
     fclose( vecFile );
 
     // Print sparse Jacobian and Hessian
-    #ifdef QPSOLVER_SPARSE
-    printJacobian( prob->nCon, prob->nVar, vars->jacNz, vars->jacIndRow, vars->jacIndCol );
-    printHessian( prob->nVar, vars->hessNz, vars->hessIndRow, vars->hessIndCol );
-    #endif
+    if( sparseQP )
+    {
+        printJacobian( prob->nCon, prob->nVar, vars->jacNz, vars->jacIndRow, vars->jacIndCol );
+        printHessian( prob->nVar, vars->hessNz, vars->hessIndRow, vars->hessIndCol );
+    }
 
     // Print a script that correctly reads everything
     strcpy( filename, outpath );
@@ -646,27 +640,5 @@ void SQPstats::dumpQPMatlab( Problemspec *prob, SQPiterate *vars )
 
     fclose( qpFile );
 }
-
-/**
- * For tracking problem: save reference solution that has to be tracked
- *
- * \todo this should be a method of VplProblem
- */
-//void SQPstats::setF1( VplProblem *prob )
-//{
-    //int count, iExOpt, iShoot, k, dimF1;
-
-    //dimF1 = 0;
-    //for( iExOpt=0; iExOpt<prob->nExOpt; iExOpt++ )
-        //for( iShoot=0; iShoot<prob->expEval[iExOpt]->nShoot-1; iShoot++ )
-            //dimF1 += prob->expEval[iExOpt]->measContrib[iShoot].M();
-    //prob->refF1.Dimension( dimF1 ).Initialize( 0.0 );
-
-    //count = 0;
-    //for( iExOpt=0; iExOpt<prob->nExOpt; iExOpt++ )
-        //for( iShoot=0; iShoot<prob->expEval[iExOpt]->nShoot-1; iShoot++ )
-            //for( k=0; k<prob->expEval[iExOpt]->measContrib[iShoot].M(); k++ )
-                //prob->refF1( count++ ) = prob->expEval[iExOpt]->measContrib[iShoot]( k );
-//}
 
 } // namespace blockSQP

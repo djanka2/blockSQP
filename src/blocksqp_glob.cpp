@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #include "blocksqp.hpp"
 #include "blocksqp_general_purpose.hpp"
 
@@ -93,6 +101,7 @@ int SQPmethod::fullstep()
 
         // Compute problem functions at trial point
         prob->evaluate( vars->trialXi, &objTrial, vars->constr, &info );
+        stats->nFunCalls++;
         cNormTrial = lInfConstraintNorm( vars->trialXi, vars->constr, prob->bu, prob->bl );
         // Reduce step if evaluation fails, if lower bound is violated or if objective or a constraint is NaN
         if( info != 0 || objTrial < prob->objLo || objTrial > prob->objUp || !(objTrial == objTrial) || !(cNormTrial == cNormTrial) )
@@ -144,6 +153,7 @@ int SQPmethod::filterLineSearch()
 
         // Compute objective and at ||constr(trialXi)||_1 at trial point
         prob->evaluate( vars->trialXi, &objTrial, vars->constr, &info );
+        stats->nFunCalls++;
         cNormTrial = lInfConstraintNorm( vars->trialXi, vars->constr, prob->bu, prob->bl );
         // Reduce step if evaluation fails, if lower bound is violated or if objective is NaN
         if( info != 0 || objTrial < prob->objLo || objTrial > prob->objUp || !(objTrial == objTrial) || !(cNormTrial == cNormTrial) )
@@ -257,8 +267,6 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
     int i, k, info;
     int nVar = prob->nVar;
     Matrix deltaXiSOC, lambdaQPSOC;
-    Matrix **dummy1, dummy2;
-    SymMatrix *dummy3;
 
     // vars->constr contains result at first trial point: c(xi+deltaXi)
     // vars->constrJac, vars->AdeltaXi and vars->gradObj are unchanged so far.
@@ -278,11 +286,7 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
 
         // Solve SOC QP to obtain new, corrected deltaXi
         // (store in separate vector to avoid conflict with original deltaXi -> need it in linesearch!)
-        #ifdef PARALLELQP
-        info = solveQP2( deltaXiSOC, lambdaQPSOC, 1 );
-        #else
-        info = solveQP( deltaXiSOC, lambdaQPSOC, 1 );
-        #endif
+        info = solveQP( deltaXiSOC, lambdaQPSOC, false );
         if( info != 0 )
             return false; // Could not solve QP, abort SOC
 
@@ -292,6 +296,7 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
 
         // Compute objective and ||constr(trialXiSOC)||_1 at SOC trial point
         prob->evaluate( vars->trialXi, &objTrialSOC, vars->constr, &info );
+        stats->nFunCalls++;
         cNormTrialSOC = lInfConstraintNorm( vars->trialXi, vars->constr, prob->bu, prob->bl );
         if( info != 0 || objTrialSOC < prob->objLo || objTrialSOC > prob->objUp || !(objTrialSOC == objTrialSOC) || !(cNormTrialSOC == cNormTrialSOC) )
             return false; // evaluation error, abort SOC
@@ -303,6 +308,7 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
         // Check sufficient decrease, case I (in SOC)
         // (Almost feasible and switching condition holds for line search alpha)
         if( cNorm <= param->thetaMin && swCond )
+        {
             if( objTrialSOC > vars->obj + param->eta*dfTdeltaXi )
             {
                 // Armijo condition does not hold for SOC step, next SOC step
@@ -320,9 +326,11 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
                 acceptStep( deltaXiSOC, lambdaQPSOC, 1.0, nSOCS );
                 return true;
             }
+        }
 
         // Check sufficient decrease, case II (in SOC)
         if( cNorm > param->thetaMin || !swCond )
+        {
             if( cNormTrialSOC < (1.0 - param->gammaTheta) * cNorm || objTrialSOC < vars->obj - param->gammaF * cNorm )
             {
                 // found suitable alpha during SOC, stop
@@ -340,6 +348,7 @@ bool SQPmethod::secondOrderCorrection( double cNorm, double cNormTrial, double d
                     cNormOld = cNormTrialSOC;
                 continue;
             }
+        }
     }
 
     return false;
@@ -356,12 +365,12 @@ int SQPmethod::feasibilityRestorationPhase()
     if( param->restoreFeas == 0 )
         return -1;
 
+    stats->nRestPhaseCalls++;
+
     int ret, it, i, k, info;
     int maxRestIt = 100;
     int warmStart;
     double cNormTrial, objTrial, lStpNorm;
-    Matrix dummy2;
-    SymMatrix *dummy3;
     RestorationProblem *restProb;
     SQPmethod *restMethod;
     SQPoptions *restOpts;
@@ -404,6 +413,7 @@ int SQPmethod::feasibilityRestorationPhase()
 
         // Compute objective at trial point
         prob->evaluate( vars->trialXi, &objTrial, vars->constr, &info );
+        stats->nFunCalls++;
         cNormTrial = lInfConstraintNorm( vars->trialXi, vars->constr, prob->bu, prob->bl );
         if( info != 0 || objTrial < prob->objLo || objTrial > prob->objUp || !(objTrial == objTrial) || !(cNormTrial == cNormTrial) )
             continue;
@@ -486,7 +496,9 @@ int SQPmethod::feasibilityRestorationPhase()
  */
 int SQPmethod::feasibilityRestorationHeuristic()
 {
-    int iExOpt, info, k;
+    stats->nRestHeurCalls++;
+
+    int info, k;
     double cNormTrial;
 
     info = 0;
@@ -501,6 +513,7 @@ int SQPmethod::feasibilityRestorationHeuristic()
 
     // Compute objective and constraints at the new (hopefully feasible) point
     prob->evaluate( vars->trialXi, &vars->obj, vars->constr, &info );
+    stats->nFunCalls++;
     cNormTrial = lInfConstraintNorm( vars->trialXi, vars->constr, prob->bu, prob->bl );
     if( info != 0 || vars->obj < prob->objLo || vars->obj > prob->objUp || !(vars->obj == vars->obj) || !(cNormTrial == cNormTrial) )
         return -1;
@@ -548,8 +561,7 @@ int SQPmethod::kktErrorReduction( )
 {
     int i, info = 0;
     double objTrial, cNormTrial, trialGradNorm, trialTol;
-    Matrix trialConstr, trialGradLagrange, dummy2;
-    SymMatrix *dummy3;
+    Matrix trialConstr, trialGradLagrange;
 
     // Compute new trial point
     for( i=0; i<prob->nVar; i++ )
@@ -558,6 +570,7 @@ int SQPmethod::kktErrorReduction( )
     // Compute objective and ||constr(trialXi)|| at trial point
     trialConstr.Dimension( prob->nCon ).Initialize( 0.0 );
     prob->evaluate( vars->trialXi, &objTrial, trialConstr, &info );
+    stats->nFunCalls++;
     cNormTrial = lInfConstraintNorm( vars->trialXi, trialConstr, prob->bu, prob->bl );
     if( info != 0 || objTrial < prob->objLo || objTrial > prob->objUp || !(objTrial == objTrial) || !(cNormTrial == cNormTrial) )
     {
@@ -569,11 +582,13 @@ int SQPmethod::kktErrorReduction( )
 
     // scaled norm of Lagrangian gradient
     trialGradLagrange.Dimension( prob->nVar ).Initialize( 0.0 );
-    #ifdef QPSOLVER_SPARSE
-    calcLagrangeGradient( vars->lambdaQP, vars->gradObj, vars->jacNz, vars->jacIndRow, vars->jacIndCol, trialGradLagrange, 0 );
-    #else
-    calcLagrangeGradient( vars->lambdaQP, vars->gradObj, vars->constrJac, trialGradLagrange, 0 );
-    #endif
+    if( param->sparseQP )
+        calcLagrangeGradient( vars->lambdaQP, vars->gradObj, vars->jacNz,
+                              vars->jacIndRow, vars->jacIndCol, trialGradLagrange, 0 );
+    else
+        calcLagrangeGradient( vars->lambdaQP, vars->gradObj, vars->constrJac,
+                              trialGradLagrange, 0 );
+
     trialGradNorm = lInfVectorNorm( trialGradLagrange );
     trialTol = trialGradNorm /( 1.0 + lInfVectorNorm( vars->lambdaQP ) );
 
@@ -598,8 +613,8 @@ bool SQPmethod::pairInFilter( double cNorm, double obj )
 
     /*
      * A pair is in the filter if:
-     * - it increases the objective
-     * - and it also increases the constraint violation
+     * - it increases the objective and
+     * - it also increases the constraint violation
      * The second expression in the if-clause states that we exclude
      * entries that are within the feasibility tolerance, e.g.
      * if an entry improves the constraint violation from 1e-16 to 1e-17,

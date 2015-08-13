@@ -1,3 +1,11 @@
+/*
+ * blockSQP -- Sequential quadratic programming for problems with
+ *             block-diagonal Hessian matrix.
+ * Copyright (C) 2012-2015 by Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+ *
+ * Licensed under the zlib license. See LICENSE for more details.
+ */
+
 #ifndef BLOCKSQP_HPP
 #define BLOCKSQP_HPP
 
@@ -20,20 +28,24 @@ class SQPoptions
     public:
         int printLevel;
         int printColor;
+        int debugLevel;
         double eps;                         ///< values smaller than this are regarded as numerically zero
         double inf;                         ///< values larger than this are regarded as numerically infinity
         double opttol;                      ///< optimality tolerance
         double nlinfeastol;                 ///< nonlinear feasibility tolerance
 
         /* Algorithmic options */
+        int sparseQP;                       ///< which qpOASES variant is used (dense/sparse/Schur)
         int globalization;                  ///< Globalization strategy
         int restoreFeas;                    ///< Use feasibility restoration phase
         int maxLineSearch;                  ///< Maximum number of steps in line search
         int maxConsecReducedSteps;          ///< Maximum number of consecutive reduced steps
         int maxConsecSkippedUpdates;        ///< Maximum number of consecutive skipped updates
+        int maxItQP;                        ///< Maximum number of QP iterations per SQP iteration
         int blockHess;                      ///< Blockwise Hessian approximation?
         int hessScaling;                    ///< Scaling strategy for Hessian approximation
         int fallbackScaling;                ///< If indefinite update is used, the type of fallback strategy
+        double maxTimeQP;                   ///< Maximum number of time in seconds per QP solve per SQP iteration
         double iniHessDiag;                 ///< Initial Hessian guess: diagonal matrix diag(iniHessDiag)
         double colEps;                      ///< epsilon for COL scaling strategy
         double colTau1;                     ///< tau1 for COL scaling strategy
@@ -46,6 +58,7 @@ class SQPoptions
         int hessMemsize;                    ///< Memory size for L-BFGS updates
         int whichSecondDerv;                ///< For which block should second derivatives be provided by the user
         bool skipFirstGlobalization;        ///< If set to true, no globalization strategy in first iteration is applied
+        int convStrategy;                   ///< Convexification strategy
         int maxConvQP;                      ///< How many additional QPs may be solved for convexification per iteration?
 
         /* Filter line search parameters */
@@ -84,72 +97,69 @@ class SQPiterate
      * Variables
      */
     public:
-        double obj;                                     ///< objective value
-        double qpObj;                                   ///< objective value of last QP subproblem
-        double cNorm;                                   ///< constraint violation
-        double cNormS;                                  ///< scaled constraint violation
-        double gradNorm;                                ///< norm of Lagrangian gradient
-        double lambdaStepNorm;                          ///< norm of step in dual variables
-        double tol;                                     ///< current optimality tolerance
+        double obj;                                   ///< objective value
+        double qpObj;                                 ///< objective value of last QP subproblem
+        double cNorm;                                 ///< constraint violation
+        double cNormS;                                ///< scaled constraint violation
+        double gradNorm;                              ///< norm of Lagrangian gradient
+        double lambdaStepNorm;                        ///< norm of step in dual variables
+        double tol;                                   ///< current optimality tolerance
 
-        Matrix xi;                                      ///< variable vector
-        Matrix lambda;                                  ///< dual variables
-        Matrix constr;                                  ///< constraint vector
+        Matrix xi;                                    ///< variable vector
+        Matrix lambda;                                ///< dual variables
+        Matrix constr;                                ///< constraint vector
 
-        Matrix constrJac;                               ///< full constraint Jacobian (without condensing)
-        double *jacNz;                                  ///< nonzero elements of Jacobian (length)
-        int *jacIndRow;                                 ///< row indices (length)
-        int *jacIndCol;                                 ///< indices to first entry of columns (nCols+1)
+        Matrix constrJac;                             ///< full constraint Jacobian (not used in sparse mode)
+        double *jacNz;                                ///< nonzero elements of Jacobian (length)
+        int *jacIndRow;                               ///< row indices (length)
+        int *jacIndCol;                               ///< indices to first entry of columns (nCols+1)
 
-        Matrix deltaMat;                                ///< last m steps
-        Matrix deltaXi;                                 ///< alias for current step
-        Matrix gradObj;                                 ///< gradient of objective
-        Matrix gradLagrange;                            ///< gradient of Lagrangian
-        Matrix gammaMat;                                ///< Lagrangian gradient differences for last m steps
-        Matrix gamma;                                   ///< alias for current Lagrangian gradient
+        Matrix deltaMat;                              ///< last m steps
+        Matrix deltaXi;                               ///< alias for current step
+        Matrix gradObj;                               ///< gradient of objective
+        Matrix gradLagrange;                          ///< gradient of Lagrangian
+        Matrix gammaMat;                              ///< Lagrangian gradient differences for last m steps
+        Matrix gamma;                                 ///< alias for current Lagrangian gradient
 
-        int nBlocks;                                    ///< number of diagonal blocks in Hessian
-        int *blockIdx;                                  ///< indices in the variable vector that correspond to diagonal blocks (nBlocks+1)
-        SymMatrix *hess;                                ///< [blockwise] pointer to Hessian of the Lagrangian
-        SymMatrix *hess1;                               ///< [blockwise] first Hessian approximation
-        SymMatrix *hess2;                               ///< [blockwise] second Hessian approximation
-        double *hessNz;                                 ///< nonzero elements of Hessian (length)
-        int *hessIndRow;                                ///< row indices (length)
-        int *hessIndCol;                                ///< indices to first entry of columns (nCols+1)
-        int *hessIndLo;                                 ///< Indices to first entry of lower triangle (including diagonal) (nCols)
-        double *hessNz2;                                 ///< nonzero elements of Hessian (length)
-        int *hessIndRow2;                                ///< row indices (length)
-        int *hessIndCol2;                                ///< indices to first entry of columns (nCols+1)
-        int *hessIndLo2;                                 ///< Indices to first entry of lower triangle (including diagonal) (nCols)
+        int nBlocks;                                  ///< number of diagonal blocks in Hessian
+        int *blockIdx;                                ///< indices in the variable vector that correspond to diagonal blocks (nBlocks+1)
+
+        SymMatrix *hess;                              ///< [blockwise] pointer to Hessian of the Lagrangian
+        SymMatrix *hess1;                             ///< [blockwise] first Hessian approximation
+        SymMatrix *hess2;                             ///< [blockwise] second Hessian approximation
+        double *hessNz;                               ///< nonzero elements of Hessian (length)
+        int *hessIndRow;                              ///< row indices (length)
+        int *hessIndCol;                              ///< indices to first entry of columns (nCols+1)
+        int *hessIndLo;                               ///< Indices to first entry of lower triangle (including diagonal) (nCols)
 
         /*
          * Variables for QP solver
          */
-        Matrix deltaBl;                                 ///< lower bounds for current step
-        Matrix deltaBu;                                 ///< upper bounds for current step
-        Matrix lambdaQP;                                ///< dual variables of QP
-        Matrix AdeltaXi;                                ///< product of constraint Jacobian with deltaXi
+        Matrix deltaBl;                               ///< lower bounds for current step
+        Matrix deltaBu;                               ///< upper bounds for current step
+        Matrix lambdaQP;                              ///< dual variables of QP
+        Matrix AdeltaXi;                              ///< product of constraint Jacobian with deltaXi
 
         /*
          * For modified BFGS updates
          */
-        Matrix deltaNorm;                               ///< sTs
-        Matrix deltaNormOld;                            ///< (from previous iteration)
-        Matrix deltaGamma;                              ///< sTy
-        Matrix deltaGammaOld;                           ///< (from previous iteration)
-        int *noUpdateCounter;                           ///< count skipped updates for each block
-        int *updateSequence;                            ///< if mixed updates are used in limited memory context
+        Matrix deltaNorm;                             ///< sTs
+        Matrix deltaNormOld;                          ///< (from previous iteration)
+        Matrix deltaGamma;                            ///< sTy
+        Matrix deltaGammaOld;                         ///< (from previous iteration)
+        int *noUpdateCounter;                         ///< count skipped updates for each block
+        int *updateSequence;                          ///< if mixed updates are used in limited memory context
 
         /*
          * Variables for globalization strategy
          */
-        int steptype;                                   ///< is current step a restoration step (1)?
-        double alpha;                                   ///< stepsize for line search
-        int nSOCS;                                      ///< number of second-order correction steps
-        int reducedStepCount;                           ///< count number of consecutive reduced steps,
-        Matrix deltaH;                                  ///< scalars for inertia correction (filter line search w indef Hessian)
-        Matrix trialXi;                                 ///< new trial iterate (for line search)
-        std::set< std::pair<double,double> > *filter;   ///< Filter contains pairs (constrVio, objective)
+        int steptype;                                 ///< is current step a restoration step (1)?
+        double alpha;                                 ///< stepsize for line search
+        int nSOCS;                                    ///< number of second-order correction steps
+        int reducedStepCount;                         ///< count number of consecutive reduced steps,
+        Matrix deltaH;                                ///< scalars for inertia correction (filter line search w indef Hessian)
+        Matrix trialXi;                               ///< new trial iterate (for line search)
+        std::set< std::pair<double,double> > *filter; ///< Filter contains pairs (constrVio, objective)
 
     /*
      * Methods
@@ -165,9 +175,10 @@ class SQPiterate
         /// Allocate diagonal block Hessian
         void allocHess( SQPoptions* param );
         /// Convert *hess to column compressed sparse format
-        //void convertHessian( Problemspec *prob, double eps );
         void convertHessian( Problemspec *prob, double eps, SymMatrix *&hess_,
                              double *&hessNz_, int *&hessIndRow_, int *&hessIndCol_, int *&hessIndLo_ );
+        /// Convert *hess to double array (dense matrix)
+        void convertHessian( Problemspec *prob, double eps, SymMatrix *&hess_ );
         /// Allocate variables specifically needed by vmused SQP method
         void allocAlg( Problemspec* prob, SQPoptions* param );
         /// Set initial filter, objective function, tolerances etc.
@@ -185,23 +196,27 @@ class SQPstats
      * Variables
      */
     public:
-        int itCount;                                    ///< iteration number
-        int qpIterations;                               ///< number of qp iterations in the current major iteration
-        int qpIterations2;                              ///< number of qp iterations for solving convexified QPs
-        int qpItTotal;                                  ///< total number of qp iterations
-        int qpResolve;                                  ///< how often has QP to be convexified and resolved?
-        int rejectedSR1;                                ///< count how often the SR1 update is rejected
-        int hessSkipped;                                ///< number of block updates skipped in the current iteration
-        int hessDamped;                                 ///< number of block updates damped in the current iteration
-        double averageSizingFactor;                     ///< average value (over all blocks) of COL sizing factor
-        PATHSTR outpath;                                ///< path where log files are stored
+        int itCount;                 ///< iteration number
+        int qpIterations;            ///< number of qp iterations in the current major iteration
+        int qpIterations2;           ///< number of qp iterations for solving convexified QPs
+        int qpItTotal;               ///< total number of qp iterations
+        int qpResolve;               ///< how often has QP to be convexified and resolved?
+        int nFunCalls;               ///< number of function calls
+        int nDerCalls;               ///< number of derivative calls
+        int nRestHeurCalls;          ///< number calls to feasibility restoration heuristic
+        int nRestPhaseCalls;         ///< number calls to feasibility restoration phase
+        int rejectedSR1;             ///< count how often the SR1 update is rejected
+        int hessSkipped;             ///< number of block updates skipped in the current iteration
+        int hessDamped;              ///< number of block updates damped in the current iteration
+        double averageSizingFactor;  ///< average value (over all blocks) of COL sizing factor
+        PATHSTR outpath;             ///< path where log files are stored
 
-        FILE *progressFile;                             ///< save stats for each SQP step
-        FILE *updateFile;                               ///< print update sequence (SR1/BFGS) to file
-        FILE *primalVarsFile;                           ///< primal variables for every SQP iteration
-        FILE *dualVarsFile;                             ///< dual variables for every SQP iteration
-        FILE *jacFile;                                  ///< Jacobian of one iteration
-        FILE *hessFile;                                 ///< Hessian of one iteration
+        FILE *progressFile;          ///< save stats for each SQP step
+        FILE *updateFile;            ///< print update sequence (SR1/BFGS) to file
+        FILE *primalVarsFile;        ///< primal variables for every SQP iteration
+        FILE *dualVarsFile;          ///< dual variables for every SQP iteration
+        FILE *jacFile;               ///< Jacobian of one iteration
+        FILE *hessFile;              ///< Hessian of one iteration
 
     /*
      * Methods
@@ -209,16 +224,16 @@ class SQPstats
     public:
         SQPstats( PATHSTR myOutpath );
         /// Open output files
-        void initStats();
+        void initStats( SQPoptions *param );
         /// Print Debug information in logfiles
-        void printDebug( Problemspec *prob, SQPiterate *vars );
+        void printDebug( SQPiterate *vars, SQPoptions *param );
         /// Print current iterate of primal variables to file
         void printPrimalVars( const Matrix &xi );
         /// Print current iterate of dual variables to file
         void printDualVars( const Matrix &lambda );
         /// Print all QP data to files to be read in MATLAB
-        void dumpQPMatlab( Problemspec *prob, SQPiterate *vars );
-        void dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProblem *qp );
+        void dumpQPMatlab( Problemspec *prob, SQPiterate *vars, int sparseQP );
+        void dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProblem *qp, int sparseQP );
         void printVectorCpp( FILE *outfile, double *vec, int len, char* varname );
         void printVectorCpp( FILE *outfile, int *vec, int len, char* varname );
         void printCppNull( FILE *outfile, char* varname );
@@ -233,9 +248,7 @@ class SQPstats
         /// Print one line of output to stdout about the current iteration
         void printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *param, bool hasConverged );
         /// Must be called before returning from run()
-        void finish( Problemspec *prob, SQPiterate *vars );
-        /// Save F1 (to be tracked later)
-        //void setF1( VplProblem *prob );
+        void finish( SQPoptions *param );
 };
 
 
@@ -249,21 +262,15 @@ class SQPmethod
      * Variables
      */
     public:
-        Problemspec*                    prob;           ///< Problem structure (has to provide evaluation routines)
-        SQPiterate*                     vars;           ///< All SQP variables for this method
-        SQPoptions*                     param;          ///< Set of algorithmic options and parameters for this method
-        SQPstats*                       stats;          ///< Statistics object for current SQP run
-        #ifdef QPSOLVER_QPOASES_SCHUR
-        qpOASES::SQProblemSchur*        qp;             ///< qpOASES qp object
-        qpOASES::SQProblemSchur*        qp2;            ///< qpOASES qp object
-        qpOASES::SQProblemSchur         qpSave;         ///< qpOASES qp object
-        #else
-        qpOASES::SQProblem*             qp;             ///< qpOASES qp object
-        qpOASES::SQProblem              qpSave;         ///< qpOASES qp object
-        #endif
+        Problemspec*             prob;        ///< Problem structure (has to provide evaluation routines)
+        SQPiterate*              vars;        ///< All SQP variables for this method
+        SQPoptions*              param;       ///< Set of algorithmic options and parameters for this method
+        SQPstats*                stats;       ///< Statistics object for current SQP run
+        qpOASES::SQProblem*      qp;          ///< qpOASES qp object
+        qpOASES::SQProblem*      qpSave;      ///< qpOASES qp object
 
     private:
-        bool                            initCalled;     ///< indicates if init() has been called (necessary for run())
+        bool                     initCalled;  ///< indicates if init() has been called (necessary for run())
 
     /*
      * Methods
@@ -273,13 +280,13 @@ class SQPmethod
         SQPmethod( Problemspec *problem, SQPoptions *parameters, SQPstats *statistics );
         ~SQPmethod();
         /// Initialization, has to be called before run
-        int init();
+        void init();
         /// Main Loop of SQP method
         int run( int maxIt, int warmStart = 0 );
         /// Call after the last call of run, to close output files etc.
         void finish();
         /// Print information about the SQP method
-        void printInfo();
+        void printInfo( int printLevel );
         /// Compute gradient of Lagrangian function (dense version)
         void calcLagrangeGradient( const Matrix &lambda, const Matrix &gradObj, const Matrix &constrJacFull, Matrix &gradLagrange, int flag );
         /// Compute gradient of Lagrangian function (sparse version)
@@ -295,14 +302,8 @@ class SQPmethod
         /// Update the bounds on the current step, i.e. the QP variables
         void updateStepBounds( bool soc );
         /// Solve a QP with QPOPT or qpOASES to obtain a step deltaXi and estimates for the Lagrange multipliers
-        int solveQP( Matrix &deltaXi, Matrix &lambdaQP, int flag = 0 );
-        int solveQP2( Matrix &deltaXi, Matrix &lambdaQP, int flag = 0 );
-        /// If filter line search with indefinite Hessians is used convexify QP and resolved if required
-        qpOASES::returnValue QPLoop( qpOASES::Options opts, qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
-                                     double *g, qpOASES::Matrix *A, double *lb, double *lu, double *lbA, double *luA );
-        qpOASES::returnValue postprocessQP_Id( qpOASES::returnValue ret, Matrix &deltaXi, Matrix &lambdaQP,
-                                               qpOASES::SymmetricMatrix *H, double *g, qpOASES::Matrix *A,
-                                               double *lb, double *lu, double *lbA, double *luA );
+        int solveQP( Matrix &deltaXi, Matrix &lambdaQP, bool matricesChanged = true );
+        void computeNextHessian( int idx, int maxQP );
 
         /*
          * Globalization Strategy
@@ -334,7 +335,6 @@ class SQPmethod
         /// Check if full step reduces KKT error
         int kktErrorReduction( );
 
-
         /*
          * Hessian Approximation
          */
@@ -351,7 +351,7 @@ class SQPmethod
         /// Compute full memory Hessian approximations based on update formulas
         void calcHessianUpdate( int updateType, int hessScaling );
         /// Compute limited memory Hessian approximations based on update formulas
-        void calcHessianUpdateLimitedMemory( int updateType, int hessScaling, double mu = 0.0 );
+        void calcHessianUpdateLimitedMemory( int updateType, int hessScaling );
         /// [blockwise] Compute new approximation for Hessian by SR1 update
         void calcSR1( const Matrix &gamma, const Matrix &delta, int iBlock );
         /// [blockwise] Compute new approximation for Hessian by BFGS update with Powell modification
@@ -364,14 +364,10 @@ class SQPmethod
          */
         /// [blockwise] Update scalars for COL sizing of Hessian approximation
         void updateScalars( const Matrix &gamma, const Matrix &delta, int iBlock );
-        /// [blockwise] Size Hessian using scaling factor from Nocedal/Wright
-        void sizeHessianNocedal( const Matrix &gamma, const Matrix &delta, int iBlock );
-        /// [blockwise] Size Hessian using Oren-Luenberger scaling factor
-        void sizeHessianOL( const Matrix &gamma, const Matrix &delta, int iBlock );
+        /// [blockwise] Size Hessian using SP, OL, or mean sizing factor
+        void sizeInitialHessian( const Matrix &gamma, const Matrix &delta, int iBlock, int option );
         /// [blockwise] Size Hessian using the COL scaling factor
-        void sizeHessianTapia( const Matrix &gamma, const Matrix &delta, int iBlock );
-        /// [blockwise] Size Hessian using the geometric mean of Nocedal and OL
-        void sizeHessianMean( const Matrix &gamma, const Matrix &delta, int iBlock );
+        void sizeHessianCOL( const Matrix &gamma, const Matrix &delta, int iBlock );
 };
 
 } // namespace blockSQP
