@@ -253,6 +253,10 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJ
     // Call initialize of the parent problem to set up linear constraint matrix correctly
     parent->initialize( xiOrig, lambda, constrJacOrig );
 
+    // Jacobian entries for slacks
+    for( i=0; i<parent->nCon; i++ )
+        constrJac( i, parent->nVar+i ) = -1.0;
+
     // The reference point is the starting value for the restoration phase
     for( i=0; i<parent->nVar; i++ )
         xiOrig( i ) = xiRef( i );

@@ -19,15 +19,16 @@ QPOASESLIBDIR = $(QPOASESDIR)/bin
 #                      End of user configuration                       #
 ########################################################################
 
-
-OBJDIR = obj
 INCLUDEDIR = include
 SRCDIR = src
+EXDIR = examples
 LIBDIR = lib
-DEFS =
+OBJDIR = $(LIBDIR)/obj
 
-OPTIONS = -g -O0 -fPIC -fopenmp -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) -D$(DEFS) -Wno-deprecated -Wno-write-strings -Wall
-#OPTIONS = -g -O3 -fPIC -fopenmp -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) -D$(DEFS) -Wno-deprecated -Wno-write-strings -Wall
+OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) -Wno-deprecated -Wno-write-strings -Wall
+#OPTIONS = -g -O3 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) -Wno-deprecated -Wno-write-strings -Wall
+
+EXAMPLES = $(EXDIR)/blocksqp_driver
 
 OBJECTS = $(OBJDIR)/blocksqp_matrix.o \
 		$(OBJDIR)/blocksqp_problemspec.o \
@@ -41,32 +42,34 @@ OBJECTS = $(OBJDIR)/blocksqp_matrix.o \
 		$(OBJDIR)/blocksqp_restoration.o \
 		$(OBJDIR)/blocksqp_stats.o
 
-LIBS       = -L $(LIBDIR) -Xlinker -rpath -Xlinker $(LIBDIR) \
+LIBS       = -L $(CURDIR)/$(LIBDIR) -Xlinker -rpath -Xlinker $(CURDIR)/$(LIBDIR) \
              -L $(QPOASESLIBDIR) -Xlinker -rpath -Xlinker $(QPOASESLIBDIR) \
              -L /usr/local/lib -Xlinker -rpath -Xlinker /usr/local/lib \
              -lblockSQP \
              -lqpOASES \
              -llapack
 
-all: blockSQP
+all: library examples
 
 library: $(OBJECTS) | $(LIBDIR)
-	g++ -shared -fopenmp -o $(LIBDIR)/libblockSQP.so $(OBJECTS)
-
-blockSQP: library $(OBJDIR)/blocksqp_driver.o
-	g++ -o blockSQP $(OBJDIR)/blocksqp_driver.o $(LIBS)
+	g++ -shared -o $(LIBDIR)/libblockSQP.so $(OBJECTS)
 
 min: $(OBJECTS) | $(LIBDIR)
 	g++ -shared -o $(LIBDIR)/libblockSQP_min.so $(OBJECTS)
 
+examples: $(EXAMPLES)
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp makefile | $(OBJDIR)
 	g++ -c $(OPTIONS) -o $@ $<
 
+$(EXDIR)/%: $(EXDIR)/%.cpp makefile
+	g++ $(OPTIONS) -o $@ $< $(LIBS)
+
+$(OBJDIR): | $(LIBDIR)
+	mkdir $(OBJDIR)
+
 $(LIBDIR):
 	mkdir $(LIBDIR)
-
-$(OBJDIR):
-	mkdir $(OBJDIR)
 
 .PHONY: clean
 clean:

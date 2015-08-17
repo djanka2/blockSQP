@@ -7,19 +7,18 @@
  */
 
 /**
- * \file matrix.h
- * \author Stefan Koerkel and JRG ExpDesign
- * \brief Matrix class for handling matrices.
+ * \file blocksqp_matrix.hpp
+ * \author Dennis Janka, based on VPLAN's matrix.h by Stefan Koerkel
+ * \date 2012-2015
  *
- *  Matrix class for handling matrices. Basic structure for arithmetic
- *  computations is given.
+ *  Declaration of Matrix and SymMatrix classes for easy access of
+ *  matrix elements.
  */
 
 #ifndef BLOCKSQP_MATRIX_HPP
 #define BLOCKSQP_MATRIX_HPP
 
-#include "stdio.h"
-#include <limits>
+#include "blocksqp_defs.hpp"
 
 namespace blockSQP
 {

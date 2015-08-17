@@ -12,6 +12,7 @@
 #include "math.h"
 #include "stdio.h"
 #include <set>
+#include <limits>
 
 #include "qpOASES.hpp"
 
