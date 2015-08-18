@@ -9,6 +9,9 @@
 /**
  * \file blocksqp_problemspec.hpp
  * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Declaration of ProblemSpec class to describes an NLP to be solved by blockSQP.
  */
 
 #ifndef BLOCKSQP_PROBLEMSPEC_HPP
@@ -20,7 +23,9 @@ namespace blockSQP
 {
 
 /**
- * \brief Base class for problem specification as required by SQP algorithm
+ * \brief Base class for problem specification as required by SQPmethod.
+ * \author Dennis Janka
+ * \date 2012-2015
  */
 class Problemspec
 {
@@ -76,57 +81,6 @@ class Problemspec
 
         /// Print information about the current problem
         virtual void printInfo(){};
-};
-
-
-/**
- * \brief If feasibility restoration phase is invoked, create an NLP to minimize constraint violation
- */
-class RestorationProblem : public Problemspec
-{
-    /*
-     * CLASS VARIABLES
-     */
-    public:
-        Problemspec *parent;
-        Matrix xiRef;
-        Matrix diagScale;
-        int neq;
-        bool *isEqCon;
-
-        double zeta;
-        double rho;
-
-    /*
-     * METHODS
-     */
-    public:
-        RestorationProblem( Problemspec *parent, const Matrix &xiReference );
-
-        /// Set initial values for xi and lambda, may also set matrix for linear constraints (dense version)
-        virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac );
-
-        /// Set initial values for xi and lambda, may also set matrix for linear constraints (sparse version)
-        virtual void initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol );
-
-        /// Evaluate all problem functions and their derivatives (dense version)
-        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
-                               double *objval, Matrix &constr,
-                               Matrix &gradObj, Matrix &constrJac,
-                               SymMatrix *&hess, int dmode, int *info );
-
-        /// Evaluate all problem functions and their derivatives (sparse version)
-        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
-                               double *objval, Matrix &constr,
-                               Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
-                               SymMatrix *&hess, int dmode, int *info );
-
-        virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow,
-                                      int *&jacIndCol, bool firstCall = 0 );
-
-        virtual void printInfo();
-        virtual void printVariables( const Matrix &xi, const Matrix &lambda, int verbose );
-        virtual void printConstraints( const Matrix &constr, const Matrix &lambda );
 };
 
 } // namespace blockSQP

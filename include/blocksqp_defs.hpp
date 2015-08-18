@@ -6,6 +6,14 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_defs.hpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Declaration of all constants and inclusion of standard header files.
+ */
+
 #ifndef BLOCKSQP_DEFS_H
 #define BLOCKSQP_DEFS_H
 
@@ -18,6 +26,7 @@
 
 namespace blockSQP
 {
+static double const myInf = std::numeric_limits<double>::infinity();    ///< Used to mark sparse zeros in Jacobian
 
 typedef char PATHSTR[4096];
 

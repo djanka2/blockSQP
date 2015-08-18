@@ -6,8 +6,16 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp.hpp"
-#include "blocksqp_problemspec.hpp"
+/**
+ * \file blocksqp_restoration.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of RestorationProblem class that describes an
+ *  minimum l_2-norm NLP.
+ */
+
+#include "blocksqp_restoration.hpp"
 
 namespace blockSQP
 {

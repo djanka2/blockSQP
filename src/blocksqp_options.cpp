@@ -6,7 +6,15 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp.hpp"
+/**
+ * \file blocksqp_options.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of SQPoptions class that holds all algorithmic options.
+ */
+
+#include "blocksqp_options.hpp"
 
 namespace blockSQP
 {

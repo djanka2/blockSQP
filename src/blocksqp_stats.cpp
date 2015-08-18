@@ -6,7 +6,15 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp.hpp"
+/**
+ * \file blocksqp_stats.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of SQPstats class that records statistics during an SQP run.
+ */
+
+#include "blocksqp_stats.hpp"
 #include "blocksqp_general_purpose.hpp"
 
 namespace blockSQP

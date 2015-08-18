@@ -6,7 +6,17 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp.hpp"
+/**
+ * \file blocksqp_qp.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of methods of SQPmethod class associated with
+ *  solution of the quadratic subproblems.
+ *
+ */
+
+#include "blocksqp_method.hpp"
 #include "blocksqp_general_purpose.hpp"
 
 namespace blockSQP

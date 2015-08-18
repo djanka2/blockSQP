@@ -6,6 +6,14 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_options.hpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Declaration of SQPoptions class that holds all algorithmic options.
+ */
+
 #ifndef BLOCKSQP_OPTIONS_HPP
 #define BLOCKSQP_OPTIONS_HPP
 
@@ -17,7 +25,9 @@ namespace blockSQP
 {
 
 /**
- * \brief Contains algorithmic options and parameters for SQP method
+ * \brief Contains algorithmic options and parameters for SQPmethod.
+ * \author Dennis Janka
+ * \date 2012-2015
  */
 class SQPoptions
 {
@@ -25,9 +35,9 @@ class SQPoptions
      * Variables
      */
     public:
-        int printLevel;
-        int printColor;
-        int debugLevel;
+        int printLevel;                     ///< information about the current iteration
+        int printColor;                     ///< use colored terminal output
+        int debugLevel;                     ///< amount of debug information that is printed during every iteration
         double eps;                         ///< values smaller than this are regarded as numerically zero
         double inf;                         ///< values larger than this are regarded as numerically infinity
         double opttol;                      ///< optimality tolerance

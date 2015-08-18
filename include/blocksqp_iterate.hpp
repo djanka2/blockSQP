@@ -6,6 +6,15 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_iterate.hpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Declaration of SQPiterate class that holds all variables that are
+ *  updated during one SQP iteration.
+ */
+
 #ifndef BLOCKSQP_ITERATE_HPP
 #define BLOCKSQP_ITERATE_HPP
 
@@ -17,9 +26,10 @@
 namespace blockSQP
 {
 
-
 /**
  * \brief Holds all variables that are updated during one SQP iteration
+ * \author Dennis Janka
+ * \date 2012-2015
  */
 class SQPiterate
 {
@@ -44,7 +54,7 @@ class SQPiterate
         int *jacIndRow;                               ///< row indices (length)
         int *jacIndCol;                               ///< indices to first entry of columns (nCols+1)
 
-        Matrix deltaMat;                              ///< last m steps
+        Matrix deltaMat;                              ///< last m primal steps
         Matrix deltaXi;                               ///< alias for current step
         Matrix gradObj;                               ///< gradient of objective
         Matrix gradLagrange;                          ///< gradient of Lagrangian
@@ -54,9 +64,9 @@ class SQPiterate
         int nBlocks;                                  ///< number of diagonal blocks in Hessian
         int *blockIdx;                                ///< indices in the variable vector that correspond to diagonal blocks (nBlocks+1)
 
-        SymMatrix *hess;                              ///< [blockwise] pointer to Hessian of the Lagrangian
+        SymMatrix *hess;                              ///< [blockwise] pointer to current Hessian of the Lagrangian
         SymMatrix *hess1;                             ///< [blockwise] first Hessian approximation
-        SymMatrix *hess2;                             ///< [blockwise] second Hessian approximation
+        SymMatrix *hess2;                             ///< [blockwise] second Hessian approximation (convexified)
         double *hessNz;                               ///< nonzero elements of Hessian (length)
         int *hessIndRow;                              ///< row indices (length)
         int *hessIndCol;                              ///< indices to first entry of columns (nCols+1)

@@ -6,6 +6,14 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_stats.hpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Declaration of SQPstats class that records statistics during an SQP run.
+ */
+
 #ifndef BLOCKSQP_STATS_HPP
 #define BLOCKSQP_STATS_HPP
 
@@ -19,7 +27,10 @@ namespace blockSQP
 {
 
 /**
- * \brief Contains objects and pointers to files that record statistics during an SQP run
+ * \brief Contains information about the current run and corresponding
+ *        methods to print them.
+ * \author Dennis Janka
+ * \date 2012-2015
  */
 class SQPstats
 {

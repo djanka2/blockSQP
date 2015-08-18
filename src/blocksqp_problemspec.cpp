@@ -6,6 +6,14 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_problemspec.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of problem-independent methods of ProblemSpec class.
+ */
+
 #include "blocksqp_problemspec.hpp"
 
 namespace blockSQP

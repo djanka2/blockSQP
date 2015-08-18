@@ -6,7 +6,17 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp.hpp"
+/**
+ * \file blocksqp_hess.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of methods of SQPmethod class associated with
+ *  computation of Hessian approximations.
+ *
+ */
+
+#include "blocksqp_method.hpp"
 #include "blocksqp_general_purpose.hpp"
 
 namespace blockSQP

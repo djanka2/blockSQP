@@ -6,8 +6,16 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#ifndef LAPACK_H
-#define LAPACK_H
+/**
+ * \file blocksqp_lapack.h
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Interface of some LAPACK routines.
+ */
+
+#ifndef BLOCKSQP_LAPACK_H
+#define BLOCKSQP_LAPACK_H
 
 #ifdef __cplusplus
 extern "C"

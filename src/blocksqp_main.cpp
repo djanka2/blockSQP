@@ -6,7 +6,17 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp.hpp"
+/**
+ * \file blocksqp_main.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of SQPmethod class.
+ *
+ */
+
+
+#include "blocksqp_method.hpp"
 #include "blocksqp_general_purpose.hpp"
 
 namespace blockSQP
@@ -42,6 +52,26 @@ SQPmethod::~SQPmethod()
     delete qp;
     delete qpSave;
     delete vars;
+}
+
+/// \todo
+void SQPmethod::printInfo( int printLevel )
+{
+    printf( "+------------------------------------+\n");
+    printf( "| Globalization:" );
+    printf( "| QP solver: " );
+    printf( "| Hessian approximation:" );
+    printf( "| Hessian memory:" );
+    printf( "| Hessian scaling:" );
+    printf( "+------------------------------------+\n");
+
+
+    if( param->sparseQP == 0 )
+        printf("Using standard version of qpOASES.\n");
+    else if( param->sparseQP == 1 )
+        printf("Using standard version of qpOASES with sparse matrices.\n");
+    else if( param->sparseQP == 2 )
+        printf("Using Schur complement version of qpOASES.\n");
 }
 
 
@@ -397,28 +427,6 @@ bool SQPmethod::calcOptTol()
         return true;
     else
         return false;
-}
-
-
-/// \todo
-void SQPmethod::printInfo( int printLevel )
-{
-    printf("+-----------------+\n");
-    printf("|Starting blockSQP|\n");
-    printf("+-----------------+\n");
-
-    //printf( "Globalization:" );
-    //printf( "QP solver: " );
-    //printf( "Hessian approximation:" );
-    //printf( "Hessian memory:" );
-    //printf( "Hessian scaling:" );
-
-    if( param->sparseQP == 0 )
-        printf("Using standard version of qpOASES.\n");
-    else if( param->sparseQP == 1 )
-        printf("Using standard version of qpOASES with sparse matrices.\n");
-    else if( param->sparseQP == 2 )
-        printf("Using Schur complement version of qpOASES.\n");
 }
 
 } // namespace blockSQP

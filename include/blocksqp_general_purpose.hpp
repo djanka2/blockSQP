@@ -6,10 +6,18 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_general_purpose.hpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Declaration of general purpose routines for matrix and vector computations.
+ */
+
 #ifndef GENERAL_PURPOSE_HPP
 #define GENERAL_PURPOSE_HPP
 
-#include "lapack.h"
+#include "blocksqp_lapack.h"
 #include "blocksqp_defs.hpp"
 #include "blocksqp_matrix.hpp"
 

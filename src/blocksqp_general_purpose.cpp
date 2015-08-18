@@ -6,6 +6,14 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_general_purpose.cpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of general purpose routines for matrix and vector computations.
+ */
+
 #include "blocksqp_general_purpose.hpp"
 
 namespace blockSQP

@@ -6,9 +6,14 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-
-/* Matrix-Datentyp */
-/* von Stefan Koerkel 1993-98 */
+/**
+ * \file blocksqp_matrix.cpp
+ * \author Dennis Janka, based on VPLAN's matrix.h by Stefan Koerkel
+ * \date 2012-2015
+ *
+ *  Implementation of Matrix and SymMatrix classes for easy access of
+ *  matrix elements.
+ */
 
 #include "blocksqp_matrix.hpp"
 

@@ -6,6 +6,14 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+/**
+ * \file blocksqp_method.hpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Declaration of blockSQP's central SQPmethod class.
+ */
+
 #ifndef BLOCKSQP_HPP
 #define BLOCKSQP_HPP
 
@@ -20,7 +28,9 @@ namespace blockSQP
 {
 
 /**
- * \brief SQP method for a given problem and set of options
+ * \brief Describes an SQP method for a given problem and set of algorithmic options.
+ * \author Dennis Janka
+ * \date 2012-2015
  */
 class SQPmethod
 {
@@ -69,6 +79,7 @@ class SQPmethod
         void updateStepBounds( bool soc );
         /// Solve a QP with QPOPT or qpOASES to obtain a step deltaXi and estimates for the Lagrange multipliers
         int solveQP( Matrix &deltaXi, Matrix &lambdaQP, bool matricesChanged = true );
+        /// Compute the next Hessian in the inner loop of increasingly convexified QPs and store it in vars->hess2
         void computeNextHessian( int idx, int maxQP );
 
         /*

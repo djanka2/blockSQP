@@ -6,7 +6,16 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp.hpp"
+/**
+ * \file blocksqp_iterate.hpp
+ * \author Dennis Janka
+ * \date 2012-2015
+ *
+ *  Implementation of SQPiterate class that holds all variables that are
+ *  updated during one SQP iteration.
+ */
+
+#include "blocksqp_iterate.hpp"
 
 namespace blockSQP
 {

@@ -11,8 +11,7 @@
  * \author Dennis Janka, based on VPLAN's matrix.h by Stefan Koerkel
  * \date 2012-2015
  *
- *  Declaration of Matrix and SymMatrix classes for easy access of
- *  matrix elements.
+ *  Declaration of Matrix and SymMatrix classes.
  */
 
 #ifndef BLOCKSQP_MATRIX_HPP
@@ -23,26 +22,15 @@
 namespace blockSQP
 {
 
-static double const myInf = std::numeric_limits<double>::infinity();    ///< Used to mark sparse zeros in Jacobian
+extern int Ccount; ///< Count constructor calls
+extern int Dcount; ///< Count destructor calls
+extern int Ecount; ///< Count assign operator calls
 
-/* ----------------------------------------------------------------------- */
-
-void Fehler( const char *F );
-
-/* ----------------------------------------------------------------------- */
-
-/// Count constructor calls
-extern int Ccount;
-/// Count destructor calls
-extern int Dcount;
-/// Count assign operator calls
-extern int Ecount;
-
-/* ----------------------------------------------------------------------- */
-
-/** Matrix class
+/**
+ * \brief Class for easy access of elements of a dense matrix.
+ * \author Dennis Janka
+ * \date 2012-2015
  */
-
 class Matrix
 {  private:
       int malloc( void );                           ///< memory allocation
@@ -63,7 +51,7 @@ class Matrix
       int M( void ) const;                          ///< number of rows
       int N( void ) const;                          ///< number of columns
       int LDIM( void ) const;                       ///< leading dimensions
-      double *ARRAY( void ) const;                        ///< returns pointer to data array
+      double *ARRAY( void ) const;                  ///< returns pointer to data array
       int TFLAG( void ) const;                      ///< returns this->tflag (1 if it is a submatrix and does not own the memory and 0 otherwise)
 
       virtual double &operator()( int i, int j );
@@ -85,11 +73,16 @@ class Matrix
         * Flag == 1: Matlab output
         * else: plain output */
       const Matrix &Print( FILE* = stdout,   ///< file for output
-                             int = 13,         ///< number of digits
-                             int = 1           ///< Flag for format
+                             int = 13,       ///< number of digits
+                             int = 1         ///< Flag for format
                            ) const;
 };
 
+/**
+ * \brief Class for easy access of elements of a dense symmetric matrix.
+ * \author Dennis Janka
+ * \date 2012-2015
+ */
 class SymMatrix : public Matrix
 {
     protected:
@@ -120,11 +113,9 @@ class SymMatrix : public Matrix
         SymMatrix& Arraymatrix( int, int, double*, int = -1 );
 };
 
+Matrix Transpose( const Matrix& A); ///< Overwrites \f$ A \f$ with its transpose \f$ A^T \f$
+Matrix &Transpose( const Matrix &A, Matrix &T ); ///< Computes \f$ T = A^T \f$
 double delta( int, int );
-/// Overwrites \f$ A \f$ with its transpose \f$ A^T \f$
-Matrix Transpose( const Matrix& A);
-/// Computes \f$ T = A^T \f$
-Matrix &Transpose( const Matrix &A, Matrix &T );
 
 } // namespace blockSQP
 

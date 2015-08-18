@@ -28,7 +28,7 @@ OBJDIR = $(LIBDIR)/obj
 OPTIONS = -g -O0 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) -Wno-deprecated -Wno-write-strings -Wall
 #OPTIONS = -g -O3 -fPIC -I $(INCLUDEDIR) -I $(QPOASESINCLUDE) -Wno-deprecated -Wno-write-strings -Wall
 
-EXAMPLES = $(EXDIR)/blocksqp_driver
+EXAMPLES = $(EXDIR)/example1
 
 OBJECTS = $(OBJDIR)/blocksqp_matrix.o \
 		$(OBJDIR)/blocksqp_problemspec.o \
@@ -73,4 +73,4 @@ $(LIBDIR):
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJDIR) $(LIBDIR) blockSQP
+	rm -rf $(OBJDIR) $(LIBDIR) $(EXAMPLES)
