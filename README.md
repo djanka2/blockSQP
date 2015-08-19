@@ -6,17 +6,17 @@ Copyright (c) 2012-2015 Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
 Introduction
 ============
 blockSQP is a sequential quadratic programming method for the solution
-of nonlinear, nonconvex optimization problems. It is particularly suited
-for problems whose Hessian matrix has block-diagonal structure such as
-problems arising from direct multiple shooting parameterizations of
-optimal control or optimum experimental design problems.
+of nonlinear, nonconvex optimization problems. It is particularly suited for
+---but not limited to---problems whose Hessian matrix has block-diagonal
+structure such as problems arising from direct multiple shooting
+parameterizations of optimal control or optimum experimental design problems.
 
 blockSQP has been developed around the quadratic programming solver
-qpOASES to solve the quadratic subproblems.
-Gradients of the objective and the constraint functions must be supplied
-by the user. Second derivatives are approximated by a combination of SR1
-and BFGS updates. Global convergence is promoted by the filter line search
-of Waechter and Biegler that also accepts indefinite Hessian approximations.
+qpOASES to solve the quadratic subproblems. Gradients of the objective
+and the constraint functions must be supplied by the user. Second derivatives
+are approximated by a combination of SR1 and BFGS updates. Global convergence
+is promoted by the filter line search of Waechter and Biegler that also
+accepts indefinite Hessian approximations.
 
 
 Installation
@@ -38,19 +38,19 @@ Installation
   to the correct location of the qpOASES installation.
 
 * Compile blockSQP by calling `make`. This should produce a shared
-  library `libblockSQP.so` in `lib`, as well as executable example problems
-  in the `examples` folder.
+  library `libblockSQP.so` in `lib/`, as well as executable example problems
+  in the `examples/` folder.
 
 
 Documentation
 =============
-Documentation for blockSQP is available under `doc/manual.pdf`.
-There is also some Doxygen source code documentation available that can
+A user's manual for blockSQP is available under `doc/manual.pdf`.
+There is also Doxygen source code documentation available that can
 be created by calling
 
   doxygen doxyfileBLOCKSQP
 
-within the `doc` directory.
+within the `doc/` directory.
 
 
 Licensing
