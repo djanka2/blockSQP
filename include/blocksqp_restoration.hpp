@@ -11,7 +11,7 @@
  * \author Dennis Janka
  * \date 2012-2015
  *
- *  Declaration of RestorationProblem class that describes an
+ *  Declaration of RestorationProblem class that describes a
  *  minimum l_2-norm NLP.
  */
 
@@ -67,9 +67,6 @@ class RestorationProblem : public Problemspec
                                double *objval, Matrix &constr,
                                Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
                                SymMatrix *&hess, int dmode, int *info );
-
-        virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow,
-                                      int *&jacIndCol, bool firstCall = 0 );
 
         virtual void printInfo();
         virtual void printVariables( const Matrix &xi, const Matrix &lambda, int verbose );

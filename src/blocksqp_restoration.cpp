@@ -11,7 +11,7 @@
  * \author Dennis Janka
  * \date 2012-2015
  *
- *  Implementation of RestorationProblem class that describes an
+ *  Implementation of RestorationProblem class that describes a
  *  minimum l_2-norm NLP.
  */
 
@@ -295,54 +295,6 @@ void RestorationProblem::initialize( Matrix &xi, Matrix &lambda, Matrix &constrJ
 }
 
 
-
-void RestorationProblem::convertJacobian( const Matrix &constrJac, double *&jacNz,
-                                          int *&jacIndRow, int *&jacIndCol, bool firstCall )
-{
-    int nnz, i, j, count;
-
-    //if( firstCall )
-    if( true )
-    {
-        // 1st run: Count nonzeros
-        nnz = 0;
-
-        for( i=0; i<constrJac.M(); i++ )
-            for( j=0; j<constrJac.N(); j++ )
-                if( constrJac( i, j ) < myInf )
-                    nnz++;
-
-        if( jacNz != NULL ) delete[] jacNz;
-        if( jacIndRow != NULL ) delete[] jacIndRow;
-
-        jacNz = new double[nnz];
-        jacIndRow = new int[nnz + (nVar+1) + nVar];
-        jacIndCol = jacIndRow + nnz;
-    }
-    else
-    {
-        /* arrays jacInd* are already allocated! */
-        nnz = jacIndCol[nVar];
-    }
-
-    // 2nd Run: store matrix entries columnwise in jacNz
-    count = 0; // runs over all nonzero elements
-    for( j=0; j<constrJac.N(); j++ )
-        for( i=0; i<constrJac.M(); i++ )
-        {
-            jacIndCol[j] = count;
-            if( fabs(constrJac(i,j)) < myInf )
-            {
-                jacNz[count] = constrJac(i,j);
-                jacIndRow[count] = i;
-                count++;
-            }
-        }
-    jacIndCol[nVar] = count;
-}
-
-
-
 void RestorationProblem::printVariables( const Matrix &xi, const Matrix &lambda, int verbose )
 {
     int k;
@@ -356,6 +308,7 @@ void RestorationProblem::printVariables( const Matrix &xi, const Matrix &lambda,
         printf("%7i: slack   %7g <= %10.3g <= %7g   |   mul=%10.3g\n", k+1, bl(k), xi(k), bu(k), lambda(k));
 }
 
+
 void RestorationProblem::printConstraints( const Matrix &constr, const Matrix &lambda )
 {
     printf("\n<|----- Constraints -----|>\n");
@@ -364,9 +317,10 @@ void RestorationProblem::printConstraints( const Matrix &constr, const Matrix &l
         printf("%5i: c%-5i   %7g <= %10.4g <= %7g   |   mul=%10.3g\n", k+1, k, bl(nVar+k), constr(k), bu(nVar+k), lambda(nVar+k));
 }
 
+
 void RestorationProblem::printInfo()
 {
-    printf("Minimum norm NLP to find a point acceptable to the filter\n");
+    printf("Minimum 2-norm NLP to find a point acceptable to the filter\n");
 }
 
 } // namespace blockSQP

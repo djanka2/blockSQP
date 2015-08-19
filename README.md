@@ -2,37 +2,55 @@ blockSQP -- Sequential quadratic programming for problems with
             block-diagonal Hessian matrix.
 Copyright (c) 2012-2015 Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
 
+
 Introduction
 ============
+blockSQP is a sequential quadratic programming method for the solution
+of nonlinear, nonconvex optimization problems. It is particularly suited
+for problems whose Hessian matrix has block-diagonal structure such as
+problems arising from direct multiple shooting parameterizations of
+optimal control or optimum experimental design problems.
+
+blockSQP has been developed around the quadratic programming solver
+qpOASES to solve the quadratic subproblems.
+Gradients of the objective and the constraint functions must be supplied
+by the user. Second derivatives are approximated by a combination of SR1
+and BFGS updates. Global convergence is promoted by the filter line search
+of Waechter and Biegler that also accepts indefinite Hessian approximations.
+
+
+Installation
+============
+* Download and install qpOASES from
+
+  https://projects.coin-or.org/qpOASES .
+
+  It is recommended to use at least release 3.2.0.
+  Alternatively, check out revision 155 from the qpOASES subversion
+  repository that is located at
+
+  https://projects.coin-or.org/svn/qpOASES/trunk/ .
+
+  For best performance it is strongly recommended to install the sparse
+  solver MA57 from HSL as described in the qpOASES manual, Sec. 2.2.
+
+* In the blockSQP main directory, open `makefile` and set `QPOASESDIR`
+  to the correct location of the qpOASES installation.
+
+* Compile blockSQP by calling `make`. This should produce a shared
+  library `libblockSQP.so` in `lib`, as well as executable example problems
+  in the `examples` folder.
 
 
 Documentation
 =============
+Documentation for blockSQP is available under `doc/manual.pdf`.
+There is also some Doxygen source code documentation available that can
+be created by calling
 
+  doxygen doxyfileBLOCKSQP
 
-Getting blockSQP
-================
-
-
-Building and Installation
-=========================
-
-* Get ma57 from HSL
-
-* add `-fPIC` to the FFLAGS and FCFLAGS in Makefile and SRC/Makefile after
-  executing configure.
-
-* Install ma57 using make and make install
-
-* Get special Schur complement branch from qpOASES::
-
-  svn co https://projects.coin-or.org/svn/qpOASES/branches/schurComplement/ .
-
-* Compile qpOASES using make
-
-* Add qpOASES directory to .bashrc or to Makefile as variable `QPOASESDIR`.
-
-* Compile and install blocksqp using make
+within the `doc` directory.
 
 
 Licensing
@@ -65,8 +83,4 @@ This is the full license text (zlib license):
 
         3. This notice may not be removed or altered from any source
         distribution.
-
-
-Acknowledgements
-================
 

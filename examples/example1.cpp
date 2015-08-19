@@ -265,7 +265,7 @@ int main( int argc, const char* argv[] )
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: scale initial Hessian with geometric mean of 1 and 2
     // 4: scale Hessian in every step with centered Oren-Luenberger sizing according to Tapia paper
-    opts->hessScaling = 0;
+    opts->hessScaling = 4;
     // scaling strategy for fallback BFGS update if SR1 and globalization is used
     opts->fallbackScaling = 0;
     // Size of limited memory
@@ -273,9 +273,10 @@ int main( int argc, const char* argv[] )
     // If too many updates are skipped, reset Hessian
     opts->maxConsecSkippedUpdates = 200;
     // 0: full space Hessian approximation (ignore block structure), 1: blockwise updates
-    opts->blockHess = 1;
+    opts->blockHess = 0;
     opts->whichSecondDerv = 0;
     opts->sparseQP = 2;
+    opts->printLevel = 1;
 
 
     /*-------------------------------------------------*/

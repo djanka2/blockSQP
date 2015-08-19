@@ -185,9 +185,9 @@ void SQPstats::printProgress( Problemspec *prob, SQPiterate *vars, SQPoptions *p
         if( hasConverged && vars->steptype < 2 )
         {
             if( param->printColor )
-                printf("\033[1;32m***CONVERGENCE ACHIEVED!***\n\033[0m");
+                printf("\n\033[1;32m***CONVERGENCE ACHIEVED!***\n\033[0m");
             else
-                printf("***CONVERGENCE ACHIEVED!***\n");
+                printf("\n***CONVERGENCE ACHIEVED!***\n");
         }
     }
 }

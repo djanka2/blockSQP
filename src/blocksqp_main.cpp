@@ -54,26 +54,6 @@ SQPmethod::~SQPmethod()
     delete vars;
 }
 
-/// \todo
-void SQPmethod::printInfo( int printLevel )
-{
-    printf( "+------------------------------------+\n");
-    printf( "| Globalization:" );
-    printf( "| QP solver: " );
-    printf( "| Hessian approximation:" );
-    printf( "| Hessian memory:" );
-    printf( "| Hessian scaling:" );
-    printf( "+------------------------------------+\n");
-
-
-    if( param->sparseQP == 0 )
-        printf("Using standard version of qpOASES.\n");
-    else if( param->sparseQP == 1 )
-        printf("Using standard version of qpOASES with sparse matrices.\n");
-    else if( param->sparseQP == 2 )
-        printf("Using Schur complement version of qpOASES.\n");
-}
-
 
 void SQPmethod::init()
 {
@@ -427,6 +407,97 @@ bool SQPmethod::calcOptTol()
         return true;
     else
         return false;
+}
+
+void SQPmethod::printInfo( int printLevel )
+{
+    char hessString1[100];
+    char hessString2[100];
+    char globString[100];
+    char qpString[100];
+
+    if( printLevel == 0 )
+        return;
+
+    /* QP Solver */
+    if( param->sparseQP == 0 )
+        strcpy( qpString, "dense, reduced Hessian factorization" );
+    else if( param->sparseQP == 1 )
+        strcpy( qpString, "sparse, reduced Hessian factorization" );
+    else if( param->sparseQP == 2 )
+        strcpy( qpString, "sparse, Schur complement approach" );
+
+    /* Globalization */
+    if( param->globalization == 0 )
+        strcpy( globString, "none (full step)" );
+    else if( param->globalization == 1 )
+        strcpy( globString, "filter line search" );
+
+    /* Hessian approximation */
+    if( param->blockHess && (param->hessUpdate == 1 || param->hessUpdate == 2) )
+        strcpy( hessString1, "block " );
+    else
+        strcpy( hessString1, "" );
+
+    if( param->hessLimMem && (param->hessUpdate == 1 || param->hessUpdate == 2) )
+        strcat( hessString1, "L-" );
+
+    /* Fallback Hessian */
+    if( param->hessUpdate == 1 || param->hessUpdate == 4 || (param->hessUpdate == 2 && !param->hessDamp) )
+    {
+        strcpy( hessString2, hessString1 );
+
+        /* Fallback Hessian update type */
+        if( param->fallbackUpdate == 0 )
+            strcat( hessString2, "Id" );
+        else if( param->fallbackUpdate == 1 )
+            strcat( hessString2, "SR1" );
+        else if( param->fallbackUpdate == 2 )
+            strcat( hessString2, "BFGS" );
+        else if( param->fallbackUpdate == 4 )
+            strcat( hessString2, "Finite differences" );
+
+        /* Fallback Hessian scaling */
+        if( param->fallbackScaling == 1 )
+            strcat( hessString2, ", SP" );
+        else if( param->fallbackScaling == 2 )
+            strcat( hessString2, ", OL" );
+        else if( param->fallbackScaling == 3 )
+            strcat( hessString2, ", mean" );
+        else if( param->fallbackScaling == 4 )
+            strcat( hessString2, ", selective sizing" );
+    }
+    else
+        strcpy( hessString2, "-" );
+
+    /* First Hessian update type */
+    if( param->hessUpdate == 0 )
+        strcat( hessString1, "Id" );
+    else if( param->hessUpdate == 1 )
+        strcat( hessString1, "SR1" );
+    else if( param->hessUpdate == 2 )
+        strcat( hessString1, "BFGS" );
+    else if( param->hessUpdate == 4 )
+        strcat( hessString1, "Finite differences" );
+
+    /* First Hessian scaling */
+    if( param->hessScaling == 1 )
+        strcat( hessString1, ", SP" );
+    else if( param->hessScaling == 2 )
+        strcat( hessString1, ", OL" );
+    else if( param->hessScaling == 3 )
+        strcat( hessString1, ", mean" );
+    else if( param->hessScaling == 4 )
+        strcat( hessString1, ", selective sizing" );
+
+    printf( "\n+---------------------------------------------------------------+\n");
+    printf( "| Starting blockSQP with the following algorithmic settings:    |\n");
+    printf( "+---------------------------------------------------------------+\n");
+    printf( "| qpOASES flavor            | %-34s|\n", qpString );
+    printf( "| Globalization             | %-34s|\n", globString );
+    printf( "| 1st Hessian approximation | %-34s|\n", hessString1 );
+    printf( "| 2nd Hessian approximation | %-34s|\n", hessString2 );
+    printf( "+---------------------------------------------------------------+\n\n");
 }
 
 } // namespace blockSQP

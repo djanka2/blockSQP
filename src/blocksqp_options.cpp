@@ -37,15 +37,15 @@ SQPoptions::SQPoptions()
     // 1: (some) colorful output
     printColor = 1;
 
+    /* 0: no debug output, 1: print one line per iteration to file,
+       2: extensive debug output to files (impairs performance) */
     debugLevel = 0;
 
     //eps = 2.2204e-16;
     eps = 1.0e-15;
     inf = 1.0e20;
-    opttol = 1.0e-5;
-    nlinfeastol = 1.0e-5;
-
-    // General algorithmic options
+    opttol = 1.0e-6;
+    nlinfeastol = 1.0e-6;
 
     // 0: no globalization, 1: filter line search
     globalization = 1;
@@ -105,7 +105,9 @@ SQPoptions::SQPoptions()
     // maximum number of second-order correction steps
     maxSOCiter = 3;
 
+    // maximum number of QP iterations per QP solve
     maxItQP = 5000;
+    // maximum time (in seconds) for one QP solve
     maxTimeQP = 10000.0;
 
     // Oren-Luenberger scaling parameters
@@ -155,10 +157,6 @@ void SQPoptions::optionsConsistency()
         hessUpdate = 2;
         hessScaling = fallbackScaling;
     }
-
-    // Don't do analytical Hessian for standard OC problems
-    //if( vars->objLo < -1.0 )
-        //objSecondDerv = 0;
 }
 
 } // namespace blockSQP
