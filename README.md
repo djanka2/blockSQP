@@ -15,8 +15,8 @@ blockSQP has been developed around the quadratic programming solver
 qpOASES to solve the quadratic subproblems. Gradients of the objective
 and the constraint functions must be supplied by the user. Second derivatives
 are approximated by a combination of SR1 and BFGS updates. Global convergence
-is promoted by the filter line search of Waechter and Biegler that also
-accepts indefinite Hessian approximations.
+is promoted by the filter line search of Waechter and Biegler that can also
+handle indefinite Hessian approximations.
 
 
 Installation
