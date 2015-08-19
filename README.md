@@ -55,8 +55,7 @@ within the `doc/` directory.
 
 Licensing
 =========
-
-The library is published under the very permissive zlib free software
+blockSQP is published under the very permissive zlib free software
 license which should allow you to use the software wherever you need.
 
 This is the full license text (zlib license):
@@ -83,4 +82,3 @@ This is the full license text (zlib license):
 
         3. This notice may not be removed or altered from any source
         distribution.
-
