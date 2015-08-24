@@ -43,10 +43,10 @@ RestorationProblem::RestorationProblem( Problemspec *parentProblem, const Matrix
 
     /* Set bounds */
     objLo = 0.0;
-    objUp = myInf;
+    objUp = 1.0e20;
 
-    bl.Dimension( nVar + nCon ).Initialize( -myInf );
-    bu.Dimension( nVar + nCon ).Initialize( myInf );
+    bl.Dimension( nVar + nCon ).Initialize( -1.0e20 );
+    bu.Dimension( nVar + nCon ).Initialize( 1.0e20 );
     for( iVar=0; iVar<parent->nVar; iVar++ )
     {
         bl( iVar ) = parent->bl( iVar );

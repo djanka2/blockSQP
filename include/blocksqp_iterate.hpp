@@ -110,8 +110,6 @@ class SQPiterate
         SQPiterate( const SQPiterate &iter );
         /// Allocate variables that any SQP code needs
         void allocMin( Problemspec* prob );
-        /// Allocate space for Jacobian
-        void allocJac( Problemspec *prob );
         /// Allocate diagonal block Hessian
         void allocHess( SQPoptions* param );
         /// Convert *hess to column compressed sparse format

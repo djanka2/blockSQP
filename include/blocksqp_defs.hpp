@@ -20,13 +20,11 @@
 #include "math.h"
 #include "stdio.h"
 #include <set>
-#include <limits>
 
 #include "qpOASES.hpp"
 
 namespace blockSQP
 {
-static double const myInf = std::numeric_limits<double>::infinity();    ///< Used to mark sparse zeros in Jacobian
 
 typedef char PATHSTR[4096];
 

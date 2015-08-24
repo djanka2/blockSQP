@@ -1,0 +1,171 @@
+\RequirePackage[l2tabu, orthodox]{nag}		% detailed warnings and complaints
+\documentclass[	11pt,
+				a4paper,
+				abstract=true,
+				twoside=true,
+				bibliography=totoc, 
+				headinclude=true,
+				chapterprefix=true,
+				footinclude=false]{scrartcl}
+
+\newif\iftwoSide\twoSidetrue
+%\newif\iftwoSide\twoSidefalse
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{scrhack}						% KOMA script fixes
+\usepackage{amsmath}						% essential AMS packages
+\usepackage{amsthm}							% essential AMS packages
+\usepackage{amssymb}						% essential AMS packages
+\usepackage{mathtools}						% extensions for amsmath
+\usepackage{xcolor}							% easy color specification
+\usepackage{graphicx}						% handling of includegraphics
+\usepackage{longtable}						% tables with pagebreaks
+\usepackage{booktabs}						% lines in tables
+\usepackage[ngerman,english]{babel}			% letztgenannte Sprache ist Default
+\usepackage{csquotes}						% ensure that quotation marks are set correct according to language
+\usepackage{ellipsis}						% corrects whitespace around \dots{}
+\usepackage{fixltx2e}						% patches for Latex
+\usepackage{geometry}						% page layout
+%FONT
+\usepackage{mathptmx}							% Times (serif default)
+\usepackage[scaled=.90]{helvet}					% Helvetica (sans serif default)
+\DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}	% use standard mathcal font
+\renewcommand*\ttdefault{txtt}					% TXTT monospace
+\usepackage{microtype}							% better spacing (might be font-dependent!)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+%	LISTINGS PACKAGE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+\usepackage{listings}						% for displaying source code
+\lstdefinestyle{myC}{
+   belowcaptionskip=1\baselineskip,
+   breaklines=true,
+   frame=L,
+   xleftmargin=\parindent,
+   language=C,
+   showstringspaces=false,
+   basicstyle=\footnotesize\ttfamily\upshape,
+   identifierstyle=\ttfamily\upshape,
+   commentstyle=\rmfamily\itshape,
+   stringstyle=\ttfamily\itshape,
+   keywordstyle=\ttfamily\upshape\bfseries,
+%   identifierstyle=\color{blue},
+%   commentstyle=\itshape\color{purple!40!black},
+%   stringstyle=\color{orange},
+%   keywordstyle=\bfseries\color{green!40!black},
+}
+\lstdefinestyle{myFort}{
+   belowcaptionskip=1\baselineskip,
+   breaklines=true,
+   frame=L,
+   xleftmargin=\parindent,
+   language=[90]Fortran,
+   showstringspaces=false,
+   basicstyle=\footnotesize\ttfamily\upshape,
+   identifierstyle=\ttfamily\upshape,
+   commentstyle=\rmfamily\itshape,
+   stringstyle=\ttfamily\itshape,
+   keywordstyle=\ttfamily\upshape\bfseries,
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+%	ALGORITHMS PACKAGE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+\usepackage[boxruled]{algorithm2e}			% algorithm environment
+\SetAlgoLined								% algorithm layout with vertical lines
+\DontPrintSemicolon							% don't print semicolon at line end
+\makeatletter								% badboxes for boxruled algorithms
+\renewcommand{\algocf@caption@boxruled}{%
+  \hrule
+  \hbox to \hsize{%
+    \vrule\hskip-0.4pt
+    \vbox{   
+       \vskip\interspacetitleboxruled%
+       \unhbox\algocf@capbox\hfill
+       \vskip\interspacetitleboxruled
+       }%
+     \hskip-0.4pt\vrule%
+   }\nointerlineskip%
+}%
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+%	SETTINGS AND LAYOUT OPTIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+
+%	KOMA layout options
+\setkomafont{disposition}{\bfseries}	% headlines bold with serifs
+\raggedbottom					% allow different page heights (fixed distance between paragraphs)
+\setcounter{tocdepth}{1}
+%\pagestyle{headings}
+
+\iftwoSide % equal to DIV 10 with smaller bottom margin
+\KOMAoptions{twoside=true}
+\geometry{a4paper,twoside,left=20mm,top=30mm,right=40mm,bottom=50mm,bindingoffset=10mm,includehead}
+\else % for one-sided version, same margin width left and right
+\KOMAoptions{twoside=false}
+\geometry{a4paper,left=35mm,top=30mm,right=35mm,bottom=50mm,includehead}
+\fi
+
+
+% always include hyperref package as the last package because it conflicts with other packages!
+\usepackage[bookmarks]{hyperref}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+% MY MACROS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+
+% Sets
+\newcommand{\R}{\mathbb{R}}				% real numbers
+\newcommand{\N}{\mathbb{N}}				% natural numbers
+\newcommand{\Id}{\mathbb{I}}			% identity
+\newcommand{\A}{\mathcal{A}}			% active set
+\newcommand{\F}{\mathcal{F}}			% filter
+\renewcommand{\S}{\mathcal{S}}			% stable active set (``set S'')
+\newcommand{\Ws}{\mathcal{W}}			% QP working set
+
+% Optimization
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\asit}{\nu}
+%\newcommand{\asit}{\iota}
+\newcommand{\st}{\textup{s.t.}}
+
+% Software
+\newcommand{\qpOASES}{\texttt{qpOASES}}
+\newcommand{\blockSQP}{\texttt{blockSQP}}
+\newcommand{\problem}{\texttt{ProblemSpec}}
+\newcommand{\init}{\texttt{init}}
+\newcommand{\evaluate}{\texttt{evaluate}}
+\newcommand{\reduce}{\texttt{reduceConstrVio}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+% END HEADER
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+
+\title{\blockSQP\ user's manual}
+\author{Dennis Janka}
+
+\begin{document}
+\maketitle
+%\begin{abstract}
+%Abstract here
+%\end{abstract}
+%\clearpage
+\tableofcontents
+\clearpage
+\section{Introduction}
+\section{Description of the method}
+\section{Setting up a problem}
+\subsection{Overview}
+\subsection{Class \problem}
+\subsection{Function \init}
+\subsection{Function \evaluate}
+\subsection{Function \reduce}
+\subsection{Example}
+\section{List of options}
+\section{Output}
+\section{Notes for developers}
+\end{document}
+
+

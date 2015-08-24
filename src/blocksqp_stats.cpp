@@ -481,7 +481,7 @@ void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProble
     outfile = fopen( filename, "w" );
     if( sparseQP )
     {
-        // Also print dense Jacobian
+        // Always print dense Jacobian
         Matrix constrJacTemp;
         constrJacTemp.Dimension( prob->nCon, prob->nVar ).Initialize( 0.0 );
         for( i=0; i<prob->nVar; i++ )
@@ -500,10 +500,7 @@ void SQPstats::dumpQPCpp( Problemspec *prob, SQPiterate *vars, qpOASES::SQProble
         for( i=0; i<m; i++ )
         {
             for( j=0; j<n; j++ )
-                if( vars->constrJac( i, j ) < myInf )
-                    fprintf( outfile, "%23.16e ", vars->constrJac( i, j ) );
-                else
-                    fprintf( outfile, "%23.16e ", 0.0 );
+                fprintf( outfile, "%23.16e ", vars->constrJac( i, j ) );
             fprintf( outfile, "\n" );
         }
         fclose( outfile );

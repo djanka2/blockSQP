@@ -7,9 +7,12 @@
  */
 
 #include "blocksqp_method.hpp"
+#include <limits>
 
 namespace blockSQP
 {
+
+static double const myInf = std::numeric_limits<double>::infinity();    ///< Used to mark sparse zeros in Jacobian
 
 /**
  * \brief Example implementation of a derived class of the ProblemSpec base class.
