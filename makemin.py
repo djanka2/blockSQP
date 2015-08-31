@@ -33,6 +33,11 @@ if not os.path.exists(minDir):
 #
 # 1.) CREATE NEW HEADER FILE
 #
+# read blocksqp_defs.hpp
+myFile = open( incDir + "blocksqp_defs.hpp", "r" )
+defsLines = myFile.readlines()
+myFile.close()
+
 # read blocksqp_matrix.hpp
 myFile = open( incDir + "blocksqp_matrix.hpp", "r" )
 matrixLines = myFile.readlines()
@@ -43,11 +48,24 @@ myFile = open( incDir + "blocksqp_problemspec.hpp", "r" )
 probLines = myFile.readlines()
 myFile.close()
 
+# insert blocksqp_defs.hpp where it is included in blocksqp_matrix.hpp
+k = 0
+for line in matrixLines:
+    if "#include" in line and "blocksqp_defs" in line:
+        defsLines.reverse()
+        for insertLine in defsLines:
+            matrixLines.insert( k, insertLine )
+        matrixLines.remove( line )
+        break
+    k += 1
+
 # insert blocksqp_matrix.hpp where it is included in blocksqp_problemspec.hpp
 k = 0
 for line in probLines:
     if "#include" in line and "blocksqp_matrix" in line:
-        probLines.insert( k, matrixLines )
+        matrixLines.reverse()
+        for insertLine in matrixLines:
+            probLines.insert( k, insertLine )
         probLines.remove( line )
         break
     k += 1

@@ -19,9 +19,8 @@
 
 #include "math.h"
 #include "stdio.h"
+#include "string.h"
 #include <set>
-
-#include "qpOASES.hpp"
 
 namespace blockSQP
 {

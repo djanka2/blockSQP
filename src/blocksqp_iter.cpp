@@ -15,6 +15,8 @@
  *  updated during one SQP iteration.
  */
 
+#include "blocksqp_options.hpp"
+#include "blocksqp_stats.hpp"
 #include "blocksqp_iterate.hpp"
 
 namespace blockSQP

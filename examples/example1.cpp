@@ -6,6 +6,9 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
+#include "blocksqp_iterate.hpp"
+#include "blocksqp_options.hpp"
+#include "blocksqp_stats.hpp"
 #include "blocksqp_method.hpp"
 #include <limits>
 

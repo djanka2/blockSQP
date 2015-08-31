@@ -17,9 +17,7 @@
 #ifndef BLOCKSQP_OPTIONS_HPP
 #define BLOCKSQP_OPTIONS_HPP
 
-#include "blocksqp_defs.hpp"
-#include "blocksqp_matrix.hpp"
-#include "blocksqp_problemspec.hpp"
+#include "blocksqp_method.hpp"
 
 namespace blockSQP
 {

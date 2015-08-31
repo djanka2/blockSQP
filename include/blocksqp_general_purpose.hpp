@@ -17,9 +17,9 @@
 #ifndef GENERAL_PURPOSE_HPP
 #define GENERAL_PURPOSE_HPP
 
-#include "blocksqp_lapack.h"
 #include "blocksqp_defs.hpp"
 #include "blocksqp_matrix.hpp"
+#include "blocksqp_lapack.h"
 
 namespace blockSQP
 {
