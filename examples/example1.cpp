@@ -6,9 +6,6 @@
  * Licensed under the zlib license. See LICENSE for more details.
  */
 
-#include "blocksqp_iterate.hpp"
-#include "blocksqp_options.hpp"
-#include "blocksqp_stats.hpp"
 #include "blocksqp_method.hpp"
 #include <limits>
 
@@ -38,9 +35,6 @@ class MyProblem : public Problemspec
                    const Matrix &xi0_       ///< starting values for the optimization (dim nVar)
                    );
 
-        /// Generic method to convert dense constraint Jacobian to a sparse matrix in Harwell--Boeing (column compressed) format.
-        virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall = 0 );
-
         /// Set initial values for xi (and possibly lambda) and parts of the Jacobian that correspond to linear constraints (dense version).
         virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac );
 
@@ -55,6 +49,9 @@ class MyProblem : public Problemspec
         virtual void evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
                                Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
                                SymMatrix *&hess, int dmode, int *info );
+
+        /// Generic method to convert dense constraint Jacobian to a sparse matrix in Harwell--Boeing (column compressed) format.
+        virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall = 0 );
 };
 
 

@@ -42,7 +42,7 @@ SQPoptions::SQPoptions()
     debugLevel = 0;
 
     //eps = 2.2204e-16;
-    eps = 1.0e-15;
+    eps = 1.0e-16;
     inf = 1.0e20;
     opttol = 1.0e-6;
     nlinfeastol = 1.0e-6;
@@ -69,7 +69,6 @@ SQPoptions::SQPoptions()
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: geometric mean of 1 and 2
     // 4: centered Oren-Luenberger sizing according to Tapia paper
-    // 5: Byrd-Lu scaling (for L-SR1 only)
     hessScaling = 2;
     fallbackScaling = 4;
     iniHessDiag = 1.0;

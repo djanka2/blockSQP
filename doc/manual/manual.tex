@@ -5,11 +5,10 @@
 				twoside=true,
 				bibliography=totoc, 
 				headinclude=true,
-				chapterprefix=true,
 				footinclude=false]{scrartcl}
 
-\newif\iftwoSide\twoSidetrue
-%\newif\iftwoSide\twoSidefalse
+%\newif\iftwoSide\twoSidetrue
+\newif\iftwoSide\twoSidefalse
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -105,7 +104,7 @@
 \geometry{a4paper,twoside,left=20mm,top=30mm,right=40mm,bottom=50mm,bindingoffset=10mm,includehead}
 \else % for one-sided version, same margin width left and right
 \KOMAoptions{twoside=false}
-\geometry{a4paper,left=35mm,top=30mm,right=35mm,bottom=50mm,includehead}
+\geometry{a4paper,left=30mm,top=30mm,right=30mm,bottom=50mm,includehead}
 \fi
 
 
@@ -131,6 +130,13 @@
 %\newcommand{\asit}{\iota}
 \newcommand{\st}{\textup{s.t.}}
 
+% Command
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}	% w scaled lines
+\newcommand{\normn}[1]{\lVert#1\rVert}				% w/o scaled lines
+\newcommand{\abs}[1]{\left\lvert#1\right\rvert}		% w scaled lines
+\newcommand{\absn}[1]{\lvert#1\rvert}				% w/o scaled lines
+\DeclareMathOperator{\diag}{diag}
+
 % Software
 \newcommand{\qpOASES}{\texttt{qpOASES}}
 \newcommand{\blockSQP}{\texttt{blockSQP}}
@@ -138,34 +144,241 @@
 \newcommand{\init}{\texttt{init}}
 \newcommand{\evaluate}{\texttt{evaluate}}
 \newcommand{\reduce}{\texttt{reduceConstrVio}}
+\newcommand{\heu}{r}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 % END HEADER
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+
 
 \title{\blockSQP\ user's manual}
 \author{Dennis Janka}
 
 \begin{document}
 \maketitle
-%\begin{abstract}
-%Abstract here
-%\end{abstract}
-%\clearpage
 \tableofcontents
 \clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Description of the method}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+The method is described in detail in \cite[Chapters 6--8]{Janka2015}. These chapters are largely self-contained. The notation used throughout this manual is the same as in~\cite{Janka2015}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Setting up a problem}
-\subsection{Overview}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+A nonlinear programming problem (NLP) of the form
+\begin{subequations}\label{eq:nlp}
+\begin{align}
+\min_{x\in\R^{n}}\ &\varphi(x) \\
+\st\ & b_{\ell} \leq \begin{bmatrix} x\\c(x)\end{bmatrix} \leq b_{u}
+\end{align}
+\end{subequations}
+is characterized by the following information that must be provided by the user:
+\begin{itemize}
+\item The number of variables, $n$,
+\item the number of constraints, $m$,
+\item the objective function, $\varphi:\R^{n}\longrightarrow\R$,
+\item the constraint function, $c:\R^{n}\longrightarrow\R^{m}$,
+\item and lower and upper bounds for the variables and constraints, $b_{\ell}$ and $b_{u}$.
+\end{itemize}
+In addition, \blockSQP\ requires the evaluation of the
+\begin{itemize}
+\item objective gradient, $\nabla \varphi(x)\in\R^{1\times n}$, and the
+\item constraint Jacobian, $\nabla c(x)\in\R^{m\times n}$.
+\end{itemize}
+Optionally, the following can be provided for optimal performance of \blockSQP:
+\begin{itemize}
+\item In the case of a block-diagonal Hessian, a partition of the variable vector $x$ corresponding to the diagonal blocks,
+\item a heuristic function $r$ to compute a point $x$ where a reduced infeasibility can be expected, $\heu:\R^{n}\longrightarrow\R^{n}$.
+\end{itemize}
+
+\blockSQP\ is written in C++ and uses an object-oriented programming paradigm.
+It provides a basic class \problem\ that is used to specify an NLP of the form~\eqref{eq:nlp}. In the following, we describe this class and how to implement the mathematical entities mentioned above. Some examples where NLPs are specified using the \problem\ class and then passed to \blockSQP\ via a suitable driver routine can be found in the \texttt{examples/} subdirectory.
+
+
+%---------------------------------------------------------------------72
 \subsection{Class \problem}
+%---------------------------------------------------------------------72
+
+
+%---------------------------------------------------------------------72
 \subsection{Function \init}
+%---------------------------------------------------------------------72
+
+
+%---------------------------------------------------------------------72
 \subsection{Function \evaluate}
+%---------------------------------------------------------------------72
+
+
+%---------------------------------------------------------------------72
 \subsection{Function \reduce}
-\subsection{Example}
-\section{List of options}
+%---------------------------------------------------------------------72
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+\section{Options and parameters}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+In this section we describe all options that are passed to \blockSQP\ through the \texttt{SQPoptions} class.
+We distinguish between algorithmic options and algorithmic parameters. The former are used to choose between different algorithmic alternatives, e.g., different Hessian approximations, while the latter define internal algorithmic constants. As a rule of thumb, whenever you are experiencing convergence problems with \blockSQP, you should try different algorithmic options first before changing algorithmic parameters.
+
+Additionally, the output can be controlled with the following options:
+\begin{longtable}[c]{lll}
+Name 							& Description/possible values									& Default	\\\hline\hline
+%
+\texttt{printLevel}				& Amount of onscreen output per iteration						& 1			\\
+								& 0: no output													&			\\
+								& 1: normal output												&			\\
+								& 2: verbose output												&			\\\hline
+%								
+\texttt{printColor}				& Enable/disable colored terminal output						& 1			\\
+								& 0: no color													&			\\
+								& 1: colored output in terminal									&			\\\hline
+%
+\texttt{debugLevel}				& Amount of file output per iteration							& 0			\\
+								& 0: no debug output											& 			\\
+								& 1: print one line per iteration to file 						& 			\\
+								& 2: extensive debug output to files (impairs performance)		& 			\\\hline
+\end{longtable}
+
+%---------------------------------------------------------------------72
+\subsection{List of algorithmic options}
+%---------------------------------------------------------------------72
+\begin{longtable}[c]{lll}
+Name 							& Description/possible values									& Default	\\\hline\hline
+%
+\texttt{sparseQP}				& \qpOASES\ flavor												& 2			\\
+								& 0: dense matrices, dense factorization of red. Hessian		&			\\
+								& 1: sparse matrices, dense factorization of red. Hessian		&			\\
+								& 2: sparse matrices, Schur complement approach					&			\\\hline
+%
+\texttt{globalization}			& Globalization strategy										& 1			\\
+								& 0: full step 													&			\\
+								& 1: filter line search globalization							&			\\\hline
+%
+\texttt{skipFirstGlobalization}	& 0: deactivate globalization for the first iteration			& 1			\\
+								& 1: normal globalization strategy in the first iteration		&			\\\hline
+%
+\texttt{restoreFeas}			& Feasibility restoration phase									& 1			\\
+								& 0: no feasibility restoration phase 							&			\\
+								& 1: minimum norm feasibility restoration phase					&			\\\hline
+%
+\texttt{hessUpdate}				& Choice of first Hessian approximation							& 1			\\
+								& 0: constant, scaled diagonal matrix							&			\\
+								& 1: SR1														&			\\
+								& 2: BFGS														&			\\
+								& 3: [not used]													&			\\
+								& 4: finite difference approximation							&			\\\hline
+%
+\texttt{hessScaling}			& Choice of scaling/sizing strategy for first Hessian			& 2			\\
+								& 0: no scaling													&			\\
+								& 1: scale initial diagonal Hessian with $\sigma_{\textup{SP}}$	&			\\
+								& 2: scale initial diagonal Hessian with $\sigma_{\textup{OL}}$	&			\\
+								& 3: scale initial diagonal Hessian with $\sigma_{\textup{Mean}}$	&		\\
+								& 4: scale Hessian in every iteration with $\sigma_{\textup{COL}}$	&		\\\hline
+%
+\texttt{fallbackUpdate}			& Choice of fallback Hessian approximation						& 2			\\
+								& (see \texttt{hessUpdate})										&			\\\hline
+%
+\texttt{fallbackScaling}		& Choice of scaling/sizing strategy for fallback Hessian		& 4			\\
+								& (see \texttt{hessScaling})									&			\\\hline
+%
+\texttt{hessLimMem}				& 0: full-memory approximation									& 1			\\
+								& 1: limited-memory approximation								&			\\\hline
+%
+\texttt{blockHess}				& Enable/disable blockwise Hessian approximation				& 1			\\
+								& 0: full Hessian approximation									&			\\
+								& 1: blockwise Hessian approximation							&			\\\hline
+
+%
+\texttt{hessDamp}				& 0: enable BFGS damping										& 1			\\
+								& 1: disable BFGS damping										&			\\\hline
+%
+\texttt{whichSecondDerv}		& User-provided second derivatives								& 0			\\
+								& 0: none														&			\\
+								& 1: for the last block											&			\\
+								& 2: for all blocks (same as \texttt{hessUpdate=4})				&			\\\hline
+\texttt{maxConvQP}				& Maximum number of convexified QPs (\texttt{int}>0)			& 1			\\\hline
+%
+\texttt{convStrategy}			& Choice of convexification strategy							& 0			\\
+								& 0: Convex combination between									&			 \\
+								& \phantom{0: }\texttt{hessUpdate} and \texttt{fallbackUpdate}	&			\\
+								& 1: Add multiples of identity to first Hessian					&			\\\hline
+\end{longtable}
+
+%---------------------------------------------------------------------72
+\subsection{List of algorithmic parameters}
+%---------------------------------------------------------------------72
+\begin{longtable}[c]{lll}
+Name 							& Symbol/Meaning												& Default			\\\hline\hline
+%
+\texttt{opttol}					& $\epsilon_{\textup{opt}}$ 									& 1.0e-5	\\\hline
+%
+\texttt{nlinfeastol}			& $\epsilon_{\textup{feas}}$									& 1.0e-5	\\\hline
+%
+\texttt{eps}					& machine precision												& 1.0e-16	\\\hline
+%
+\texttt{inf}					& $\infty$														& 1.0e20	\\\hline
+%
+\texttt{maxItQP}				& Maximum number of QP iterations per							& 5000		\\
+								& SQP iteration (\texttt{int}>0)								&			\\\hline
+%
+\texttt{maxTimeQP}				& Maximum time in second for \qpOASES\ per						& 10000.0		\\
+								& SQP iteration (\texttt{double}>0)								&			\\\hline
+%
+\texttt{maxConsecSkippedUpdates}& Maximum number of skipped updates 							& 100		\\
+								& before Hessian is reset (\texttt{int}>0)						&			\\\hline
+%
+\texttt{maxLineSearch}			& Maximum number of line search iterations (\text{int}>0)		& 20		\\\hline
+%
+\texttt{maxConsecReducedSteps}	& Maximum number of reduced steps 								& 100		\\
+								& before restoration phase is invoked (\text{int}>0)			&			\\\hline
+%
+\texttt{hessMemsize}			& Size of Hessian memory (\texttt{int}>0)						& 20		\\\hline
+%
+\texttt{maxSOCiter}				& Maximum number of second-order correction steps				& 3			\\\hline
+%\texttt{colEps}				&
+%%
+%\texttt{colTau1}				&
+%%
+%\texttt{colTau2}				&
+%%
+%\texttt{iniHessDiag}			&
+%%
+%\texttt{hessDampFac}			&
+%\texttt{maxSOCiter}
+%\texttt{gammaTheta}
+%\texttt{gammaF}
+%\texttt{kappaSOC}
+%\texttt{kappaF}
+%\texttt{thetaMax}
+%\texttt{thetaMin}
+%\texttt{delta}
+%\texttt{sTheta}
+%\texttt{sF}
+%\texttt{kappaMinus}
+%\texttt{kappaPlus}
+%\texttt{kappaPlusMax}
+%\texttt{deltaH0}
+%\texttt{eta}
+\end{longtable}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Output}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Notes for developers}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+
+\bibliographystyle{plain}
+\bibliography{references.bib}
 \end{document}
 
 

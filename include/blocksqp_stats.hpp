@@ -17,7 +17,12 @@
 #ifndef BLOCKSQP_STATS_HPP
 #define BLOCKSQP_STATS_HPP
 
-#include "blocksqp_method.hpp"
+#include "qpOASES.hpp"
+#include "blocksqp_defs.hpp"
+#include "blocksqp_matrix.hpp"
+#include "blocksqp_problemspec.hpp"
+#include "blocksqp_options.hpp"
+#include "blocksqp_iterate.hpp"
 
 namespace blockSQP
 {

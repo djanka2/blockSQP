@@ -33,36 +33,36 @@ extern int Ecount; ///< Count assign operator calls
  */
 class Matrix
 {  private:
-      int malloc( void );                           ///< memory allocation
-      int free( void );                             ///< memory free
+      int malloc( void );                                           ///< memory allocation
+      int free( void );                                             ///< memory free
 
    public:
-      int m;                                        ///< internal number of rows
-      int n;                                        ///< internal number of columns
-      int ldim;                                     ///< internal leading dimension not necesserily equal to m or n
-      double *array;                                ///< array of how the matrix is stored in the memory
-      int tflag;                                    ///< 1 if it is a Teilmatrix
+      int m;                                                        ///< internal number of rows
+      int n;                                                        ///< internal number of columns
+      int ldim;                                                     ///< internal leading dimension not necesserily equal to m or n
+      double *array;                                                ///< array of how the matrix is stored in the memory
+      int tflag;                                                    ///< 1 if it is a Teilmatrix
 
-      Matrix( int = 1, int = 1, int = -1 );         ///< constructor with standard arguments
+      Matrix( int = 1, int = 1, int = -1 );                         ///< constructor with standard arguments
       Matrix( int, int, double*, int = -1 );
       Matrix( const Matrix& A );
       ~Matrix( void );
 
-      int M( void ) const;                          ///< number of rows
-      int N( void ) const;                          ///< number of columns
-      int LDIM( void ) const;                       ///< leading dimensions
-      double *ARRAY( void ) const;                  ///< returns pointer to data array
-      int TFLAG( void ) const;                      ///< returns this->tflag (1 if it is a submatrix and does not own the memory and 0 otherwise)
+      int M( void ) const;                                          ///< number of rows
+      int N( void ) const;                                          ///< number of columns
+      int LDIM( void ) const;                                       ///< leading dimensions
+      double *ARRAY( void ) const;                                  ///< returns pointer to data array
+      int TFLAG( void ) const;                                      ///< returns this->tflag (1 if it is a submatrix and does not own the memory and 0 otherwise)
 
-      virtual double &operator()( int i, int j );
+      virtual double &operator()( int i, int j );                   ///< access element i,j of the matrix
       virtual double &operator()( int i, int j ) const;
-      virtual double &operator()( int i );
+      virtual double &operator()( int i );                          ///< access element i of the matrix (columnwise)
       virtual double &operator()( int i ) const;
-      virtual Matrix &operator=( const Matrix &A );
+      virtual Matrix &operator=( const Matrix &A );                 ///< assignment operator
 
-      Matrix &Dimension( int, int = 1, int = -1 );
-      Matrix &Initialize( double (*)( int, int ) );
-      Matrix &Initialize( double );
+      Matrix &Dimension( int, int = 1, int = -1 );                  ///< set dimension (rows, columns, leading dimension)
+      Matrix &Initialize( double (*)( int, int ) );                 ///< set matrix elements i,j to f(i,j)
+      Matrix &Initialize( double );                                 ///< set all matrix elements to a constant
 
       /// Returns just a pointer to the full matrix
       Matrix& Submatrix( const Matrix&, int, int, int = 0, int = 0 );

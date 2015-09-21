@@ -18,7 +18,10 @@
 #ifndef BLOCKSQP_ITERATE_HPP
 #define BLOCKSQP_ITERATE_HPP
 
-#include "blocksqp_method.hpp"
+#include "blocksqp_defs.hpp"
+#include "blocksqp_matrix.hpp"
+#include "blocksqp_problemspec.hpp"
+#include "blocksqp_options.hpp"
 
 namespace blockSQP
 {

@@ -21,13 +21,12 @@
 #include "blocksqp_defs.hpp"
 #include "blocksqp_matrix.hpp"
 #include "blocksqp_problemspec.hpp"
+#include "blocksqp_options.hpp"
+#include "blocksqp_iterate.hpp"
+#include "blocksqp_stats.hpp"
 
 namespace blockSQP
 {
-
-class SQPiterate;
-class SQPoptions;
-class SQPstats;
 
 /**
  * \brief Describes an SQP method for a given problem and set of algorithmic options.

@@ -206,7 +206,7 @@ void SQPmethod::sizeInitialHessian( const Matrix &gamma, const Matrix &delta, in
 {
     int i, j;
     double scale;
-    double myEps = 1.0e2 * param->eps;
+    double myEps = 1.0e3 * param->eps;
 
     if( option == 1 )
     {// Shanno-Phua
@@ -244,7 +244,7 @@ void SQPmethod::sizeInitialHessian( const Matrix &gamma, const Matrix &delta, in
 void SQPmethod::sizeHessianCOL( const Matrix &gamma, const Matrix &delta, int iBlock )
 {
     int i, j;
-    double theta, scale, myEps = 1.0e2 * param->eps;
+    double theta, scale, myEps = 1.0e3 * param->eps;
     double deltaNorm, deltaNormOld, deltaGamma, deltaGammaOld, deltaBdelta;
 
     // Get sTs, sTs_, sTy, sTy_, sTBs
@@ -529,7 +529,7 @@ void SQPmethod::calcBFGS( const Matrix &gamma, const Matrix &delta, int iBlock )
     stats->hessDamped += damped;
 
     // B_k+1 = B_k - Bdelta * (Bdelta)^T / h1 + gamma * gamma^T / h2
-    double myEps = 1.0e1 * param->eps;
+    double myEps = 1.0e2 * param->eps;
     if( fabs( h1 ) < myEps || fabs( h2 ) < myEps )
     {// don't perform update because of bad condition, might introduce negative eigenvalues
         //printf("block = %i, h1 = %g, h2 = %g\n", iBlock, h1, h2);
@@ -554,7 +554,7 @@ void SQPmethod::calcSR1( const Matrix &gamma, const Matrix &delta, int iBlock )
     int i, j, k, dim = gamma.M();
     Matrix gmBdelta;
     SymMatrix *B;
-    double myEps = 1.0e1 * param->eps;
+    double myEps = 1.0e2 * param->eps;
     double r = 1.0e-8;
     double h = 0.0;
 

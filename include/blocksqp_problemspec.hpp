@@ -17,6 +17,7 @@
 #ifndef BLOCKSQP_PROBLEMSPEC_HPP
 #define BLOCKSQP_PROBLEMSPEC_HPP
 
+#include "blocksqp_defs.hpp"
 #include "blocksqp_matrix.hpp"
 
 namespace blockSQP

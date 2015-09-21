@@ -18,6 +18,7 @@
 #ifndef BLOCKSQP_RESTORATION_HPP
 #define BLOCKSQP_RESTORATION_HPP
 
+#include "blocksqp_defs.hpp"
 #include "blocksqp_problemspec.hpp"
 
 namespace blockSQP
