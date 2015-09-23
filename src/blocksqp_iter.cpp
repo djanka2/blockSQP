@@ -329,10 +329,6 @@ void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
     deltaNormOld.Dimension( nBlocks ).Initialize( 1.0 );
     deltaGamma.Dimension( nBlocks ).Initialize( 0.0 );
     deltaGammaOld.Dimension( nBlocks ).Initialize( 0.0 );
-
-    // this is not used at the moment
-    updateSequence = new int[param->hessMemsize];
-    for( i=0; i<param->hessMemsize; i++ ) updateSequence[i] = 1;
 }
 
 

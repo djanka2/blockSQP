@@ -39,6 +39,9 @@ SQPstats::SQPstats( PATHSTR myOutpath )
     nDerCalls = 0;
     nRestHeurCalls = 0;
     nRestPhaseCalls = 0;
+
+    nTotalUpdates = 0;
+    nTotalSkippedUpdates = 0;
 }
 
 

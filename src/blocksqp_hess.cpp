@@ -444,12 +444,12 @@ void SQPmethod::calcHessianUpdateLimitedMemory( int updateType, int hessScaling 
                 sizeHessianCOL( gammai, deltai, iBlock );
 
             // Compute the new update
-            if( updateType == 1 && vars->updateSequence[pos] == 1 )
+            if( updateType == 1 )
                 calcSR1( gammai, deltai, iBlock );
-            else if( updateType == 1 && vars->updateSequence[pos] == 2 )
-                calcBFGS( gammai, deltai, iBlock );
             else if( updateType == 2 )
                 calcBFGS( gammai, deltai, iBlock );
+
+            stats->nTotalUpdates++;
 
             // Count damping statistics only for the most recent update
             if( pos != posNewest )
@@ -536,6 +536,7 @@ void SQPmethod::calcBFGS( const Matrix &gamma, const Matrix &delta, int iBlock )
         vars->noUpdateCounter[iBlock]++;
         stats->hessDamped -= damped;
         stats->hessSkipped++;
+        stats->nTotalSkippedUpdates++;
     }
     else
     {
@@ -578,6 +579,7 @@ void SQPmethod::calcSR1( const Matrix &gamma, const Matrix &delta, int iBlock )
         //printf("block %i, h = %23.16e\n", iBlock, h );
         vars->noUpdateCounter[iBlock]++;
         stats->hessSkipped++;
+        stats->nTotalSkippedUpdates++;
     }
     else
     {

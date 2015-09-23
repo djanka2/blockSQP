@@ -140,6 +140,9 @@
 % Software
 \newcommand{\qpOASES}{\texttt{qpOASES}}
 \newcommand{\blockSQP}{\texttt{blockSQP}}
+\newcommand{\method}{\texttt{SQPmethod}}
+\newcommand{\options}{\texttt{SQPoptions}}
+\newcommand{\stats}{\texttt{SQPstats}}
 \newcommand{\problem}{\texttt{ProblemSpec}}
 \newcommand{\init}{\texttt{init}}
 \newcommand{\evaluate}{\texttt{evaluate}}
@@ -161,12 +164,33 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+\blockSQP\ is a sequential quadratic programming method for finding local solutions
+of nonlinear, nonconvex optimization problems. It is particularly suited for
+---but not limited to---problems whose Hessian matrix has block-diagonal
+structure such as problems arising from direct multiple shooting
+parameterizations of optimal control or optimum experimental design problems.
 
+\blockSQP\ has been developed around the quadratic programming solver
+\qpOASES~\cite{Ferreau2013} to solve the quadratic subproblems. Gradients of the objective
+and the constraint functions must be supplied by the user in sparse or dense format. 
+Second derivatives are approximated by a combination of SR1 and BFGS updates. 
+Global convergence is promoted by the filter line search of Waechter and Biegler~\cite{Waechter2005b,Waechter2005}
+that can also handle indefinite Hessian approximations.
+
+The method is described in detail in \cite[Chapters 6--8]{Janka2015}. These chapters are largely self-contained. The notation used throughout this manual is the same as in~\cite{Janka2015}. A publication~\cite{Janka2015b} is currently under review.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
-\section{Description of the method}
+\section{Installation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
-The method is described in detail in \cite[Chapters 6--8]{Janka2015}. These chapters are largely self-contained. The notation used throughout this manual is the same as in~\cite{Janka2015}.
+The following steps
+
+\begin{enumerate}
+\item Download and install qpOASES from \url{https://projects.coin-or.org/qpOASES}.
+
+	It is recommended to use at least release 3.2.0. Alternatively, check out revision 155 from the \qpOASES\ subversion repository that is located at \url{https://projects.coin-or.org/svn/qpOASES/trunk/}. For best performance it is strongly recommended to install the sparse solver \texttt{MA57} from HSL as described in the \qpOASES\ manual, Sec. 2.2.
+\item In the \blockSQP\ main directory, open \texttt{makefile} and set \texttt{QPOASESDIR} to the correct location of the \qpOASES\ installation.
+\item Compile \blockSQP\ by calling \texttt{make}. This should produce a shared library \texttt{libblockSQP.so} in  \texttt{lib/}, as well as executable example problems in the \texttt{examples/} folder.
+\end{enumerate}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
@@ -189,7 +213,7 @@ is characterized by the following information that must be provided by the user:
 \end{itemize}
 In addition, \blockSQP\ requires the evaluation of the
 \begin{itemize}
-\item objective gradient, $\nabla \varphi(x)\in\R^{1\times n}$, and the
+\item objective gradient, $\nabla \varphi(x)\in\R^{n}$, and the
 \item constraint Jacobian, $\nabla c(x)\in\R^{m\times n}$.
 \end{itemize}
 Optionally, the following can be provided for optimal performance of \blockSQP:
@@ -198,29 +222,37 @@ Optionally, the following can be provided for optimal performance of \blockSQP:
 \item a heuristic function $r$ to compute a point $x$ where a reduced infeasibility can be expected, $\heu:\R^{n}\longrightarrow\R^{n}$.
 \end{itemize}
 
-\blockSQP\ is written in C++ and uses an object-oriented programming paradigm.
-It provides a basic class \problem\ that is used to specify an NLP of the form~\eqref{eq:nlp}. In the following, we describe this class and how to implement the mathematical entities mentioned above. Some examples where NLPs are specified using the \problem\ class and then passed to \blockSQP\ via a suitable driver routine can be found in the \texttt{examples/} subdirectory.
+\blockSQP\ is written in C++ and uses an object-oriented programming paradigm. The method itself is implemented in a class \method. Furthermore, \blockSQP\ provides a basic class \problem\ that is used to specify an NLP of the form~\eqref{eq:nlp}. To solve an NLP, first an instance of \problem\ must be passed to an instance of \method. Then, \method's appropriate methods must be called to start the computation.
+
+In the following, we first describe the \problem\ class and how to implement the mathematical entities mentioned above. 
+Afterwards we describe the necessary methods of the \method\ class that must be called from an appropriate driver routine. Some examples where NLPs are specified using the \problem\ class and then passed to \blockSQP\ via a simple C++ driver routine can be found in the \texttt{examples/} subdirectory.
 
 
 %---------------------------------------------------------------------72
 \subsection{Class \problem}
 %---------------------------------------------------------------------72
+Dense and sparse problems
 
+Implement constructor
 
+Variables must be set
 %---------------------------------------------------------------------72
-\subsection{Function \init}
-%---------------------------------------------------------------------72
-
-
-%---------------------------------------------------------------------72
-\subsection{Function \evaluate}
+\subsubsection{Function \init}
 %---------------------------------------------------------------------72
 
 
 %---------------------------------------------------------------------72
-\subsection{Function \reduce}
+\subsubsection{Function \evaluate}
 %---------------------------------------------------------------------72
 
+
+%---------------------------------------------------------------------72
+\subsubsection{Function \reduce}
+%---------------------------------------------------------------------72
+
+%---------------------------------------------------------------------72
+\subsection{Class \method}
+%---------------------------------------------------------------------72
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Options and parameters}
@@ -309,7 +341,8 @@ Name 							& Description/possible values									& Default	\\\hline\hline
 \texttt{convStrategy}			& Choice of convexification strategy							& 0			\\
 								& 0: Convex combination between									&			 \\
 								& \phantom{0: }\texttt{hessUpdate} and \texttt{fallbackUpdate}	&			\\
-								& 1: Add multiples of identity to first Hessian					&			\\\hline
+								& 1: Add multiples of identity to first Hessian					&			\\
+								& \phantom{1: } [not implemented yet]										&\\\hline
 \end{longtable}
 
 %---------------------------------------------------------------------72

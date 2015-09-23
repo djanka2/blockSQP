@@ -51,6 +51,8 @@ class SQPstats
         int rejectedSR1;             ///< count how often the SR1 update is rejected
         int hessSkipped;             ///< number of block updates skipped in the current iteration
         int hessDamped;              ///< number of block updates damped in the current iteration
+        int nTotalUpdates;
+        int nTotalSkippedUpdates;
         double averageSizingFactor;  ///< average value (over all blocks) of COL sizing factor
         PATHSTR outpath;             ///< path where log files are stored
 

@@ -258,28 +258,28 @@ int main( int argc, const char* argv[] )
     /* Options for SQP solver */
     /*------------------------*/
     opts = new SQPoptions();
-    opts->opttol = 1.0e-10;
-    opts->nlinfeastol = 1.0e-10;
+    opts->opttol = 1.0e-12;
+    opts->nlinfeastol = 1.0e-12;
 
     // 0: no globalization, 1: filter line search
-    opts->globalization = 1;
+    opts->globalization = 0;
     // 0: (scaled) identity, 1: SR1, 2: BFGS
-    opts->hessUpdate = 1;
+    opts->hessUpdate = 0;
     // 0: initial Hessian is diagonal matrix, 1: scale initial Hessian according to Nocedal p.143,
     // 2: scale initial Hessian with Oren-Luenberger factor 3: scale initial Hessian with geometric mean of 1 and 2
     // 4: scale Hessian in every step with centered Oren-Luenberger sizing according to Tapia paper
-    opts->hessScaling = 4;
+    opts->hessScaling = 0;
     // scaling strategy for fallback BFGS update if SR1 and globalization is used
     opts->fallbackScaling = 0;
     // Size of limited memory
-    opts->hessMemsize = 200;
+    opts->hessLimMem = 0;
     // If too many updates are skipped, reset Hessian
     opts->maxConsecSkippedUpdates = 200;
     // 0: full space Hessian approximation (ignore block structure), 1: blockwise updates
     opts->blockHess = 0;
     opts->whichSecondDerv = 0;
     opts->sparseQP = 2;
-    opts->printLevel = 1;
+    opts->printLevel = 2;
 
 
     /*-------------------------------------------------*/
@@ -289,7 +289,7 @@ int main( int argc, const char* argv[] )
     meth = new SQPmethod( prob, opts, stats );
 
     meth->init();
-    ret = meth->run( 5 );
+    ret = meth->run( 100 );
     meth->finish();
     if( ret == 1 )
         printf("\033[0;36m***Maximum number of iterations reached.***\n\033[0m");
@@ -298,9 +298,9 @@ int main( int argc, const char* argv[] )
     meth->vars->xi.Print();
     printf("\nDual solution:\n");
     meth->vars->lambda.Print();
-    //printf("\nHessian approximation at the solution:\n");
-    //for( int i=0; i<meth->vars->nBlocks; i++ )
-        //meth->vars->hess[i].Print();
+    printf("\nHessian approximation at the solution:\n");
+    for( int i=0; i<meth->vars->nBlocks; i++ )
+        meth->vars->hess[i].Print();
     //printf("\nFallback Hessian at the solution:\n");
     //for( int i=0; i<meth->vars->nBlocks; i++ )
         //meth->vars->hess2[i].Print();

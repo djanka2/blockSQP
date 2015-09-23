@@ -5,7 +5,7 @@ Copyright (c) 2012-2015 Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
 
 Introduction
 ============
-blockSQP is a sequential quadratic programming method for the solution
+blockSQP is a sequential quadratic programming method for finding local solutions
 of nonlinear, nonconvex optimization problems. It is particularly suited for
 ---but not limited to---problems whose Hessian matrix has block-diagonal
 structure such as problems arising from direct multiple shooting

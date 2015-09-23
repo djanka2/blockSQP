@@ -88,7 +88,6 @@ class SQPiterate
         Matrix deltaGamma;                            ///< sTy
         Matrix deltaGammaOld;                         ///< (from previous iteration)
         int *noUpdateCounter;                         ///< count skipped updates for each block
-        int *updateSequence;                          ///< if mixed updates are used in limited memory context
 
         /*
          * Variables for globalization strategy
