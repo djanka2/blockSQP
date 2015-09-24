@@ -31,7 +31,7 @@ namespace blockSQP
 class Problemspec
 {
     /*
-     * CLASS VARIABLES
+     * VARIABLES
      */
     public:
         int         nVar;               ///< number of variables
@@ -53,32 +53,60 @@ class Problemspec
         Problemspec( ){};
         virtual ~Problemspec( ){};
 
-        /// Set initial values for xi and lambda, may also set matrix for linear constraints (dense version)
-        virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac ){};
+        /// Set initial values for xi (and possibly lambda) and parts of the Jacobian that correspond to linear constraints (dense version).
+        virtual void initialize( Matrix &xi,            ///< optimization variables
+                                 Matrix &lambda,        ///< Lagrange multipliers
+                                 Matrix &constrJac      ///< constraint Jacobian (dense)
+                                 ){};
 
-        /// Set initial values for xi and lambda, may also set matrix for linear constraints (sparse version)
-        virtual void initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol ){};
+        /// Set initial values for xi (and possibly lambda) and parts of the Jacobian that correspond to linear constraints (sparse version).
+        virtual void initialize( Matrix &xi,            ///< optimization variables
+                                 Matrix &lambda,        ///< Lagrange multipliers
+                                 double *&jacNz,        ///< nonzero elements of constraint Jacobian
+                                 int *&jacIndRow,       ///< row indices of nonzero elements
+                                 int *&jacIndCol        ///< starting indices of columns
+                                 ){};
 
-        /// Evaluate all problem functions and their derivatives (dense version)
-        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
-                               double *objval, Matrix &constr,
-                               Matrix &gradObj, Matrix &constrJac,
-                               SymMatrix *&hess, int dmode, int *info ){};
+        /// Evaluate objective, constraints, and derivatives (dense version).
+        virtual void evaluate( const Matrix &xi,        ///< optimization variables
+                               const Matrix &lambda,    ///< Lagrange multipliers
+                               double *objval,          ///< objective function value
+                               Matrix &constr,          ///< constraint function values
+                               Matrix &gradObj,         ///< gradient of objective
+                               Matrix &constrJac,       ///< constraint Jacobian (dense)
+                               SymMatrix *&hess,        ///< Hessian of the Lagrangian (blockwise)
+                               int dmode,               ///< derivative mode
+                               int *info                ///< error flag
+                               ){};
 
-        /// Evaluate all problem functions and their derivatives (sparse version)
-        virtual void evaluate( const Matrix &xi, const Matrix &lambda,
-                               double *objval, Matrix &constr,
-                               Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
-                               SymMatrix *&hess, int dmode, int *info ){};
+        /// Evaluate objective, constraints, and derivatives (sparse version).
+        virtual void evaluate( const Matrix &xi,        ///< optimization variables
+                               const Matrix &lambda,    ///< Lagrange multipliers
+                               double *objval,          ///< objective function value
+                               Matrix &constr,          ///< constraint function values
+                               Matrix &gradObj,         ///< gradient of objective
+                               double *&jacNz,          ///< nonzero elements of constraint Jacobian
+                               int *&jacIndRow,         ///< row indices of nonzero elements
+                               int *&jacIndCol,         ///< starting indices of columns
+                               SymMatrix *&hess,        ///< Hessian of the Lagrangian (blockwise)
+                               int dmode,               ///< derivative mode
+                               int *info                ///< error flag
+                               ){};
 
         /// Short cut if no derivatives are needed
-        virtual void evaluate( const Matrix &xi, double *objval, Matrix &constr, int *info );
+        virtual void evaluate( const Matrix &xi,        ///< optimization variables
+                               double *objval,          ///< objective function value
+                               Matrix &constr,          ///< constraint function values
+                               int *info                ///< error flag
+                               );
 
         /*
          * Optional Methods
          */
         /// Problem specific heuristic to reduce constraint violation
-        virtual void reduceConstrVio( Matrix &xi, int *info ){};
+        virtual void reduceConstrVio( Matrix &xi,       ///< optimization variables
+                                      int *info         ///< error flag
+                                      ){ *info = 1; };
 
         /// Print information about the current problem
         virtual void printInfo(){};

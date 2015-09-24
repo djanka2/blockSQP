@@ -289,7 +289,7 @@ void SQPiterate::convertHessian( Problemspec *prob, double eps, SymMatrix *&hess
  */
 void SQPiterate::allocAlg( Problemspec *prob, SQPoptions *param )
 {
-    int iBlock, i;
+    int iBlock;
     int nVar = prob->nVar;
     int nCon = prob->nCon;
 

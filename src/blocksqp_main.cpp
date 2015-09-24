@@ -93,7 +93,7 @@ int SQPmethod::run( int maxIt, int warmStart )
         return -1;
     }
 
-    if( warmStart == 0 )
+    if( warmStart == 0 || stats->itCount == 0 )
     {
         // SQP iteration 0
 
@@ -306,8 +306,15 @@ int SQPmethod::run( int maxIt, int warmStart )
 
 void SQPmethod::finish()
 {
+    if( initCalled )
+        initCalled = false;
+    else
+    {
+        printf("init() must be called before finish().\n");
+        return;
+    }
+
     stats->finish( param );
-    initCalled = false;
 }
 
 

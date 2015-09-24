@@ -36,23 +36,89 @@ class MyProblem : public Problemspec
                    );
 
         /// Set initial values for xi (and possibly lambda) and parts of the Jacobian that correspond to linear constraints (dense version).
-        virtual void initialize( Matrix &xi, Matrix &lambda, Matrix &constrJac );
+        virtual void initialize( Matrix &xi,            ///< optimization variables
+                                 Matrix &lambda,        ///< Lagrange multipliers
+                                 Matrix &constrJac      ///< constraint Jacobian (dense)
+                                 );
 
         /// Set initial values for xi (and possibly lambda) and parts of the Jacobian that correspond to linear constraints (sparse version).
-        virtual void initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&jacIndRow, int *&jacIndCol );
+        virtual void initialize( Matrix &xi,            ///< optimization variables
+                                 Matrix &lambda,        ///< Lagrange multipliers
+                                 double *&jacNz,        ///< nonzero elements of constraint Jacobian
+                                 int *&jacIndRow,       ///< row indices of nonzero elements
+                                 int *&jacIndCol        ///< starting indices of columns
+                                 );
 
         /// Evaluate objective, constraints, and derivatives (dense version).
-        virtual void evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
-                               Matrix &gradObj, Matrix &constrJac, SymMatrix *&hess, int dmode, int *info );
+        virtual void evaluate( const Matrix &xi,        ///< optimization variables
+                               const Matrix &lambda,    ///< Lagrange multipliers
+                               double *objval,          ///< objective function value
+                               Matrix &constr,          ///< constraint function values
+                               Matrix &gradObj,         ///< gradient of objective
+                               Matrix &constrJac,       ///< constraint Jacobian (dense)
+                               SymMatrix *&hess,        ///< Hessian of the Lagrangian (blockwise)
+                               int dmode,               ///< derivative mode
+                               int *info                ///< error flag
+                               );
 
         /// Evaluate objective, constraints, and derivatives (sparse version).
-        virtual void evaluate( const Matrix &xi, const Matrix &lambda, double *objval, Matrix &constr,
-                               Matrix &gradObj, double *&jacNz, int *&jacIndRow, int *&jacIndCol,
-                               SymMatrix *&hess, int dmode, int *info );
+        virtual void evaluate( const Matrix &xi,        ///< optimization variables
+                               const Matrix &lambda,    ///< Lagrange multipliers
+                               double *objval,          ///< objective function value
+                               Matrix &constr,          ///< constraint function values
+                               Matrix &gradObj,         ///< gradient of objective
+                               double *&jacNz,          ///< nonzero elements of constraint Jacobian
+                               int *&jacIndRow,         ///< row indices of nonzero elements
+                               int *&jacIndCol,         ///< starting indices of columns
+                               SymMatrix *&hess,        ///< Hessian of the Lagrangian (blockwise)
+                               int dmode,               ///< derivative mode
+                               int *info                ///< error flag
+                               );
 
         /// Generic method to convert dense constraint Jacobian to a sparse matrix in Harwell--Boeing (column compressed) format.
-        virtual void convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall = 0 );
+        virtual void convertJacobian( const Matrix &constrJac,  ///< constraint Jacobian (dense)
+                                      double *&jacNz,           ///< nonzero elements of constraint Jacobian
+                                      int *&jacIndRow,          ///< row indices of nonzero elements
+                                      int *&jacIndCol,          ///< starting indices of columns
+                                      bool firstCall = 0        ///< indicates if this method is called for the first time
+                                      );
 };
+
+
+MyProblem::MyProblem( int nVar_, int nCon_, int nBlocks_, int *blockIdx_, const Matrix &bl_, const Matrix &bu_, const Matrix &xi0_ )
+{
+    nVar = nVar_;
+    nCon = nCon_;
+
+    nBlocks = nBlocks_;
+    blockIdx = new int[nBlocks+1];
+    if( nBlocks == 1 )
+    {
+        blockIdx[0] = 0;
+        blockIdx[1] = nVar;
+    }
+    else
+    {
+        for( int i=0; i<nBlocks+1; i++ )
+            blockIdx[i] = blockIdx_[i];
+    }
+
+    bl.Dimension( nVar + nCon ).Initialize( -myInf );
+    bu.Dimension( nVar + nCon ).Initialize( myInf );
+
+    for( int i=0; i<nVar+nCon; i++ )
+    {
+        bl( i ) = bl_( i );
+        bu( i ) = bu_( i );
+    }
+
+    objLo = -myInf;
+    objUp = myInf;
+
+    xi0.Dimension( nVar );
+    for( int i=0; i<nVar; i++ )
+        xi0( i ) = xi0_( i );
+}
 
 
 void MyProblem::convertJacobian( const Matrix &constrJac, double *&jacNz, int *&jacIndRow, int *&jacIndCol, bool firstCall )
@@ -72,7 +138,7 @@ void MyProblem::convertJacobian( const Matrix &constrJac, double *&jacNz, int *&
         if( jacIndRow != NULL ) delete[] jacIndRow;
 
         jacNz = new double[nnz];
-        jacIndRow = new int[nnz + (nVar+1) + nVar];
+        jacIndRow = new int[nnz + (nVar+1)];
         jacIndCol = jacIndRow + nnz;
     }
     else
@@ -121,7 +187,7 @@ void MyProblem::initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&ja
     for( int i=0; i<nVar; i++ )
         xi( i ) = xi0( i );
 
-    // find out Jacobian sparsity pattern
+    // find out Jacobian sparsity pattern by evaluating derivatives once
     constrDummy.Dimension( nCon ).Initialize( 0.0 );
     gradObjDummy.Dimension( nVar ).Initialize( 0.0 );
     constrJac.Dimension( nCon, nVar ).Initialize( myInf );
@@ -129,42 +195,6 @@ void MyProblem::initialize( Matrix &xi, Matrix &lambda, double *&jacNz, int *&ja
 
     // allocate sparse Jacobian structures
     convertJacobian( constrJac, jacNz, jacIndRow, jacIndCol, 1 );
-}
-
-
-MyProblem::MyProblem( int nVar_, int nCon_, int nBlocks_, int *blockIdx_, const Matrix &bl_, const Matrix &bu_, const Matrix &xi0_ )
-{
-    nVar = nVar_;
-    nCon = nCon_;
-
-    nBlocks = nBlocks_;
-    blockIdx = new int[nBlocks+1];
-    if( nBlocks == 1 )
-    {
-        blockIdx[0] = 0;
-        blockIdx[1] = nVar;
-    }
-    else
-    {
-        for( int i=0; i<nBlocks+1; i++ )
-            blockIdx[i] = blockIdx_[i];
-    }
-
-    bl.Dimension( nVar + nCon ).Initialize( -myInf );
-    bu.Dimension( nVar + nCon ).Initialize( myInf );
-
-    for( int i=0; i<nVar+nCon; i++ )
-    {
-        bl( i ) = bl_( i );
-        bu( i ) = bu_( i );
-    }
-
-    objLo = -myInf;
-    objUp = myInf;
-
-    xi0.Dimension( nVar );
-    for( int i=0; i<nVar; i++ )
-        xi0( i ) = xi0_( i );
 }
 
 /*

@@ -67,6 +67,7 @@ class SQPstats
      * Methods
      */
     public:
+        /// Constructor
         SQPstats( PATHSTR myOutpath );
         /// Open output files
         void initStats( SQPoptions *param );
