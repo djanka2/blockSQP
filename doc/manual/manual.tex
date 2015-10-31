@@ -182,12 +182,14 @@ parameterizations of optimal control or optimum experimental design problems.
 
 \blockSQP\ has been developed around the quadratic programming solver
 \qpOASES~\cite{Ferreau2013} to solve the quadratic subproblems. Gradients of the objective
-and the constraint functions must be supplied by the user in sparse or dense format. 
+and the constraint functions must be supplied by the user. The constraint Jacobian may be given in sparse or dense format. 
 Second derivatives are approximated by a combination of SR1 and BFGS updates. 
 Global convergence is promoted by the filter line search of Waechter and Biegler~\cite{Waechter2005b,Waechter2005}
 that can also handle indefinite Hessian approximations.
 
 The method is described in detail in \cite[Chapters 6--8]{Janka2015}. These chapters are largely self-contained. The notation used throughout this manual is the same as in~\cite{Janka2015}. A publication~\cite{Janka2015b} is currently under review.
+
+\blockSQP\ is published under the very permissive zlib free software license which should allow you to use the software wherever you need. The full license text can be found at the end of this document.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
 \section{Installation}
@@ -563,9 +565,40 @@ Column & Description\\\hline\hline
 \\\hline
 \end{tabular}
 
-
 \bibliographystyle{plain}
 \bibliography{references.bib}
+
+\clearpage
+\appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+\section{License\label{sec:license}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%72
+This is the full license text (zlib license):
+\begin{verbatim}
+    blockSQP -- Sequential quadratic programming for problems with
+                block-diagonal Hessian matrix.
+    Copyright (c) 2012-2015 Dennis Janka <dennis.janka@iwr.uni-heidelberg.de>
+
+    This software is provided 'as-is', without any express or implied
+    warranty. In no event will the authors be held liable for any
+    damages arising from the use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute
+    it freely, subject to the following restrictions:
+
+        1. The origin of this software must not be misrepresented;
+        you must not claim that you wrote the original software.
+        If you use this software in a product, an acknowledgment in the
+        product documentation would be appreciated but is not required.
+
+        2. Altered source versions must be plainly marked as such,
+        and must not be misrepresented as being the original software.
+
+        3. This notice may not be removed or altered from any source
+        distribution.
+\end{verbatim}
+
 \end{document}
 
 

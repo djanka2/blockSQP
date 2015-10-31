@@ -11,7 +11,7 @@
 ########################################################################
 
 # Location of qpOASES header files and shared library
-QPOASESDIR = ~/numerics/coin-qpOASES
+QPOASESDIR = ~/path/to/qpOASES
 QPOASESINCLUDE = $(QPOASESDIR)/include
 QPOASESLIBDIR = $(QPOASESDIR)/bin
 
